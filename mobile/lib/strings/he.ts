@@ -4,6 +4,13 @@
 import type { Strings } from "./en";
 
 export const he: Strings = {
+  nav: {
+    discover: "גילוי",
+    myDinners: "הארוחות שלי",
+    messages: "הודעות",
+    sponsor: "תרומה",
+    profile: "פרופיל",
+  },
   common: {
     free: "חינם",
     full: "מלא",

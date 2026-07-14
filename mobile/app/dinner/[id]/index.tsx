@@ -4,7 +4,7 @@ import { router, useLocalSearchParams } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
-import * as Haptics from "expo-haptics";
+import { haptics } from "@/lib/haptics";
 import { Header } from "@/components/ui/Header";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
@@ -14,6 +14,7 @@ import { useToast } from "@/components/ui/Toast";
 import { colors, radii, spacing, typography, elevation } from "@/constants/theme";
 import { KOSHER_LEVELS } from "@/constants/options";
 import { t } from "@/lib/i18n";
+import { useResponsive } from "@/lib/responsive";
 import { createRsvp, fetchDinner, fetchMyRsvpForDinner, isAddressRevealed } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import type { Dinner } from "@/types";
@@ -31,6 +32,8 @@ export default function DinnerDetail() {
   const { profile } = useAuth();
   const insets = useSafeAreaInsets();
   const { show } = useToast();
+  const { contentMaxWidth } = useResponsive();
+  const centered = { width: "100%" as const, maxWidth: contentMaxWidth, alignSelf: "center" as const };
   const [dinner, setDinner] = useState<Dinner | null>(null);
   const [myRsvp, setMyRsvp] = useState<{ status: string; paymentStatus: string } | null>(null);
   const [loading, setLoading] = useState(true);
@@ -68,7 +71,7 @@ export default function DinnerDetail() {
         paid: false,
         autoApprove: dinner.approvalMode === "auto_accept",
       });
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      haptics.success();
       show(
         dinner.approvalMode === "auto_accept" ? "You're in — see you Friday!" : "Request sent to the host.",
         "success"
@@ -112,11 +115,11 @@ export default function DinnerDetail() {
 
   return (
     <SafeAreaView style={styles.safe} edges={["top", "left", "right"]}>
-      <View style={styles.headerWrap}>
+      <View style={[styles.headerWrap, centered]}>
         <Header title={t("dinner.title")} />
       </View>
       <ScrollView
-        contentContainerStyle={[styles.scroll, { paddingBottom: myRsvp ? spacing.xl : 128 }]}
+        contentContainerStyle={[styles.scroll, centered, { paddingBottom: myRsvp ? spacing.xl : 128 }]}
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.hostRow}>
@@ -180,20 +183,22 @@ export default function DinnerDetail() {
 
       {!myRsvp ? (
         <View style={[styles.footer, elevation.overlay, { paddingBottom: insets.bottom + spacing.md }]}>
-          <View style={styles.footerPrice}>
-            <Text style={styles.footerPriceValue}>
-              {dinner.isFree ? t("common.free") : `₪${dinner.costPerHead}`}
-            </Text>
-            {!dinner.isFree ? <Text style={styles.footerPriceUnit}>{t("discover.perPerson")}</Text> : null}
+          <View style={[styles.footerInner, centered]}>
+            <View style={styles.footerPrice}>
+              <Text style={styles.footerPriceValue}>
+                {dinner.isFree ? t("common.free") : `₪${dinner.costPerHead}`}
+              </Text>
+              {!dinner.isFree ? <Text style={styles.footerPriceUnit}>{t("discover.perPerson")}</Text> : null}
+            </View>
+            <Button
+              label={ctaLabel}
+              onPress={handleRsvp}
+              disabled={seatsLeft <= 0}
+              loading={submitting}
+              size="lg"
+              style={styles.footerCta}
+            />
           </View>
-          <Button
-            label={ctaLabel}
-            onPress={handleRsvp}
-            disabled={seatsLeft <= 0}
-            loading={submitting}
-            size="lg"
-            style={styles.footerCta}
-          />
         </View>
       ) : null}
     </SafeAreaView>
@@ -294,14 +299,13 @@ const styles = StyleSheet.create({
     start: 0,
     end: 0,
     bottom: 0,
-    flexDirection: "row",
-    alignItems: "center",
     paddingHorizontal: spacing.lg,
     paddingTop: spacing.md,
     backgroundColor: colors.surface,
     borderTopWidth: 1,
     borderTopColor: colors.border,
   },
+  footerInner: { flexDirection: "row", alignItems: "center" },
   footerPrice: { marginEnd: spacing.md },
   footerPriceValue: { ...typography.h3, color: colors.textPrimary },
   footerPriceUnit: { ...typography.caption, color: colors.textSecondary },

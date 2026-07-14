@@ -1,9 +1,8 @@
-import React from "react";
-import { View } from "react-native";
+import React, { useEffect } from "react";
+import { Platform, View } from "react-native";
 import { Stack } from "expo-router";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
-import { StripeProvider } from "@stripe/stripe-react-native";
 import {
   useFonts,
   FrankRuhlLibre_400Regular,
@@ -19,22 +18,11 @@ import {
 } from "@expo-google-fonts/rubik";
 import { AuthProvider } from "@/context/AuthContext";
 import { ToastProvider } from "@/components/ui/Toast";
-import { isStripeConfigured } from "@/lib/env";
+import { PaymentProvider } from "@/components/PaymentProvider";
 import { colors } from "@/constants/theme";
 // Side-effect import: sets active locale + RTL direction before anything renders.
 import "@/lib/i18n";
-
-function Providers({ children }: { children: React.ReactNode }) {
-  if (!isStripeConfigured) return <>{children}</>;
-  return (
-    <StripeProvider
-      publishableKey={process.env.EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY as string}
-      merchantIdentifier="merchant.org.shishi"
-    >
-      <>{children}</>
-    </StripeProvider>
-  );
-}
+import { i18n, isRTL } from "@/lib/i18n";
 
 export default function RootLayout() {
   const [fontsLoaded] = useFonts({
@@ -48,6 +36,15 @@ export default function RootLayout() {
     Rubik_700Bold,
   });
 
+  // On web, react-native-web mirrors flexbox from I18nManager, but the document's text direction and
+  // language must be set explicitly for correct rendering + accessibility.
+  useEffect(() => {
+    if (Platform.OS === "web" && typeof document !== "undefined") {
+      document.documentElement.dir = isRTL ? "rtl" : "ltr";
+      document.documentElement.lang = i18n.locale;
+    }
+  }, []);
+
   // Hold on the brand background until the type system is ready, so the first paint is already
   // in Frank Ruhl Libre / Rubik rather than a system-font flash.
   if (!fontsLoaded) {
@@ -58,10 +55,10 @@ export default function RootLayout() {
     <SafeAreaProvider>
       <ToastProvider>
         <AuthProvider>
-          <Providers>
+          <PaymentProvider>
             <StatusBar style="dark" />
             <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.bg } }} />
-          </Providers>
+          </PaymentProvider>
         </AuthProvider>
       </ToastProvider>
     </SafeAreaProvider>

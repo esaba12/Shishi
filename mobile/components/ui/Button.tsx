@@ -1,6 +1,6 @@
 import React, { useRef } from "react";
 import { ActivityIndicator, Animated, Pressable, StyleSheet, Text, ViewStyle } from "react-native";
-import * as Haptics from "expo-haptics";
+import { haptics } from "@/lib/haptics";
 import { colors, radii, spacing, typography } from "@/constants/theme";
 
 type Variant = "primary" | "secondary" | "ghost" | "danger";
@@ -35,7 +35,7 @@ export function Button({
     Animated.spring(scale, { toValue: to, useNativeDriver: true, speed: 40, bounciness: 6 }).start();
 
   function handlePress() {
-    if (haptic) Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    if (haptic) haptics.impact();
     onPress();
   }
 

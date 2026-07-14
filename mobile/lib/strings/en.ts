@@ -2,6 +2,13 @@
 // Keys are namespaced by screen/domain. Interpolation uses i18n-js `%{name}` syntax; plural keys use
 // { one, other } and are selected by passing `{ count }` to t().
 export const en = {
+  nav: {
+    discover: "Discover",
+    myDinners: "My Dinners",
+    messages: "Messages",
+    sponsor: "Sponsor",
+    profile: "Profile",
+  },
   common: {
     free: "Free",
     full: "Full",

@@ -2,6 +2,7 @@ import React from "react";
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View, ViewStyle } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { colors, spacing } from "@/constants/theme";
+import { useResponsive } from "@/lib/responsive";
 
 interface ScreenProps {
   children: React.ReactNode;
@@ -11,9 +12,14 @@ interface ScreenProps {
 }
 
 export function Screen({ children, scroll = true, style, padded = true }: ScreenProps) {
+  const { contentMaxWidth } = useResponsive();
+  // Cap + center content so mobile-first screens read as intentional on desktop web.
+  const centered: ViewStyle = { width: "100%", maxWidth: contentMaxWidth, alignSelf: "center" };
+
   const content = (
-    <View style={[padded && styles.padded, style]}>{children}</View>
+    <View style={[!scroll && styles.fill, centered, padded && styles.padded, style]}>{children}</View>
   );
+
   return (
     <SafeAreaView style={styles.safeArea} edges={["top", "left", "right"]}>
       <KeyboardAvoidingView
@@ -24,6 +30,7 @@ export function Screen({ children, scroll = true, style, padded = true }: Screen
           <ScrollView
             contentContainerStyle={styles.scrollContent}
             keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
           >
             {content}
           </ScrollView>
@@ -45,6 +52,10 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     flexGrow: 1,
+  },
+  // Only when not scrolling: fill height so children like the map/FlatList get bounded height.
+  fill: {
+    flex: 1,
   },
   padded: {
     padding: spacing.lg,

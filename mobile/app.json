@@ -13,6 +13,16 @@
       "resizeMode": "contain",
       "backgroundColor": "#FFF7F9"
     },
+    "web": {
+      "bundler": "metro",
+      "output": "single",
+      "favicon": "./assets/favicon.png",
+      "name": "Shishi",
+      "shortName": "Shishi",
+      "themeColor": "#E11D48",
+      "backgroundColor": "#FFF7F9",
+      "description": "Warm Shabbat dinners in Tel Aviv — find a table, host, or sponsor."
+    },
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "org.shishi.app"

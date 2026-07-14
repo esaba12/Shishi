@@ -2,8 +2,6 @@ import React, { useEffect, useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import { useStripe } from "@stripe/stripe-react-native";
-import * as Haptics from "expo-haptics";
 import { Screen } from "@/components/ui/Screen";
 import { Header } from "@/components/ui/Header";
 import { Button } from "@/components/ui/Button";
@@ -12,8 +10,10 @@ import { Avatar } from "@/components/ui/Avatar";
 import { useToast } from "@/components/ui/Toast";
 import { colors, radii, spacing, typography } from "@/constants/theme";
 import { t } from "@/lib/i18n";
-import { createPaymentIntent, createRsvp, fetchDinner } from "@/lib/api";
+import { createRsvp, fetchDinner } from "@/lib/api";
 import { isStripeConfigured } from "@/lib/env";
+import { useDinnerCheckout } from "@/lib/payments";
+import { haptics } from "@/lib/haptics";
 import { useAuth } from "@/context/AuthContext";
 import type { Dinner } from "@/types";
 
@@ -29,7 +29,7 @@ export default function Checkout() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { profile } = useAuth();
   const { show } = useToast();
-  const { initPaymentSheet, presentPaymentSheet } = useStripe();
+  const { pay } = useDinnerCheckout();
   const [dinner, setDinner] = useState<Dinner | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -43,7 +43,7 @@ export default function Checkout() {
       paid: true,
       autoApprove: dinner.approvalMode === "auto_accept",
     });
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    haptics.success();
     router.replace(`/dinner/${dinner.id}`);
   }
 
@@ -51,22 +51,15 @@ export default function Checkout() {
     if (!dinner) return;
     setLoading(true);
     try {
-      const { clientSecret } = await createPaymentIntent(dinner.id);
-      if (!isStripeConfigured || clientSecret === "demo_client_secret") {
-        // No live Stripe key yet — simulate success so the rest of the flow is testable.
-        await confirmRsvp();
+      // Payment is platform-specific (native PaymentSheet / web); RSVP + navigation stay here.
+      const result = await pay(dinner);
+      if (!result.ok) {
+        show(result.error ?? t("checkout.failed"), "error");
         return;
       }
-      const { error: initError } = await initPaymentSheet({
-        merchantDisplayName: "Shishi",
-        paymentIntentClientSecret: clientSecret,
-      });
-      if (initError) throw new Error(initError.message);
-      const { error: presentError } = await presentPaymentSheet();
-      if (presentError) throw new Error(presentError.message);
       await confirmRsvp();
-    } catch (e) {
-      show(e instanceof Error ? e.message : t("checkout.failed"), "error");
+    } catch {
+      show(t("checkout.failed"), "error");
     } finally {
       setLoading(false);
     }
