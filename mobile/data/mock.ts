@@ -1,4 +1,4 @@
-import type { ChatMessage, Dinner, MessageThread, Profile } from "@/types";
+import type { ChatMessage, Dinner, MessageThread, PotluckItem, Profile } from "@/types";
 
 // Used only when Supabase isn't configured yet (see lib/env.ts), so the app is
 // click-through-able out of the box. Swapped out automatically once real env vars are set.
@@ -86,6 +86,49 @@ export const mockDinners: Dinner[] = [
 ];
 
 export const mockRsvps: Record<string, { status: string; paymentStatus: string }> = {};
+
+// Keyed by dinner id. Mutated in-place by lib/api.ts in demo mode so the checklist stays
+// click-through-able without a Supabase project connected.
+export const mockPotluckItems: Record<string, PotluckItem[]> = {
+  d1: [
+    {
+      id: "p1",
+      dinnerId: "d1",
+      name: "Bottles of wine",
+      category: "drink",
+      quantityNeeded: 2,
+      isMoneyRequest: false,
+      moneyAmount: null,
+      notes: "Red or white, whatever you like",
+      claims: [],
+      createdAt: "2026-06-25T10:00:00Z",
+    },
+    {
+      id: "p2",
+      dinnerId: "d1",
+      name: "Dessert for the table",
+      category: "food",
+      quantityNeeded: 1,
+      isMoneyRequest: false,
+      moneyAmount: null,
+      notes: null,
+      claims: [],
+      createdAt: "2026-06-25T10:05:00Z",
+    },
+    {
+      id: "p3",
+      dinnerId: "d1",
+      name: "Chip in for flowers & candles",
+      category: "money",
+      quantityNeeded: 1,
+      isMoneyRequest: true,
+      moneyAmount: 80,
+      notes: "Totally optional — whatever feels right",
+      claims: [],
+      createdAt: "2026-06-25T10:10:00Z",
+    },
+  ],
+};
 
 export const mockThreads: MessageThread[] = [
   {

@@ -1,9 +1,17 @@
-import type { KosherLevel } from "@/types/database";
+import type { KosherLevel, PotluckCategory } from "@/types/database";
 
 export const KOSHER_LEVELS: { value: KosherLevel; label: string }[] = [
   { value: "not_kosher", label: "Not kosher" },
   { value: "kosher", label: "Kosher" },
   { value: "strictly_kosher", label: "Strictly kosher" },
+];
+
+export const POTLUCK_CATEGORIES: { value: PotluckCategory; label: string }[] = [
+  { value: "food", label: "Food" },
+  { value: "drink", label: "Drink" },
+  { value: "supplies", label: "Supplies" },
+  { value: "money", label: "Money" },
+  { value: "other", label: "Other" },
 ];
 
 export const INTEREST_TAGS = [

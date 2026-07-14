@@ -79,6 +79,12 @@ export default function ManageDinner() {
         onPress={() => router.push(`/messages/${id}`)}
         style={{ marginTop: spacing.lg }}
       />
+      <Button
+        label="Potluck checklist"
+        variant="secondary"
+        onPress={() => router.push(`/dinner/${id}/potluck`)}
+        style={{ marginTop: spacing.sm }}
+      />
     </Screen>
   );
 }

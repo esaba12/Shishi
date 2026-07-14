@@ -3,6 +3,7 @@ import type {
   DinnerStatus,
   KosherLevel,
   PaymentStatus,
+  PotluckCategory,
   ReportStatus,
   ReportTargetType,
   RsvpStatus,
@@ -61,6 +62,31 @@ export interface Dinner {
   budgetNeeded: number | null;
   seekingSponsorship: boolean;
   status: DinnerStatus;
+}
+
+export interface PotluckClaim {
+  id: string;
+  itemId: string;
+  attendeeId: string;
+  attendeeName: string;
+  attendeePhotoUrl: string | null;
+  quantity: number;
+  contributionAmount: number | null;
+  note: string | null;
+  createdAt: string;
+}
+
+export interface PotluckItem {
+  id: string;
+  dinnerId: string;
+  name: string;
+  category: PotluckCategory;
+  quantityNeeded: number;
+  isMoneyRequest: boolean;
+  moneyAmount: number | null;
+  notes: string | null;
+  claims: PotluckClaim[];
+  createdAt: string;
 }
 
 export interface Rsvp {

@@ -9,15 +9,26 @@ import { Header } from "@/components/ui/Header";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Avatar } from "@/components/ui/Avatar";
+import { Badge } from "@/components/ui/Badge";
+import { TextField } from "@/components/ui/TextField";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { useToast } from "@/components/ui/Toast";
 import { colors, radii, spacing, typography, elevation } from "@/constants/theme";
 import { KOSHER_LEVELS } from "@/constants/options";
 import { t } from "@/lib/i18n";
 import { useResponsive } from "@/lib/responsive";
-import { createRsvp, fetchDinner, fetchMyRsvpForDinner, isAddressRevealed } from "@/lib/api";
+import {
+  cancelPotluckClaim,
+  claimPotluckItem,
+  createRsvp,
+  fetchDinner,
+  fetchMyRsvpForDinner,
+  fetchPotluckItems,
+  isAddressRevealed,
+} from "@/lib/api";
+import { claimedQuantity, findMyClaim, isItemFulfilled, pledgedAmount } from "@/lib/potluck";
 import { useAuth } from "@/context/AuthContext";
-import type { Dinner } from "@/types";
+import type { Dinner, PotluckItem } from "@/types";
 
 function formatDate(date: string) {
   return new Date(`${date}T00:00:00`).toLocaleDateString(undefined, {
@@ -36,18 +47,21 @@ export default function DinnerDetail() {
   const centered = { width: "100%" as const, maxWidth: contentMaxWidth, alignSelf: "center" as const };
   const [dinner, setDinner] = useState<Dinner | null>(null);
   const [myRsvp, setMyRsvp] = useState<{ status: string; paymentStatus: string } | null>(null);
+  const [potluckItems, setPotluckItems] = useState<PotluckItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const [d, rsvp] = await Promise.all([
+      const [d, rsvp, potluck] = await Promise.all([
         fetchDinner(id),
         profile ? fetchMyRsvpForDinner(id, profile.id) : Promise.resolve(null),
+        fetchPotluckItems(id),
       ]);
       setDinner(d);
       setMyRsvp(rsvp);
+      setPotluckItems(potluck);
     } catch {
       show("Couldn't load this dinner.", "error");
     } finally {
@@ -81,6 +95,39 @@ export default function DinnerDetail() {
       show("Couldn't complete your RSVP. Please try again.", "error");
     } finally {
       setSubmitting(false);
+    }
+  }
+
+  const canClaimPotluck = myRsvp?.status === "approved";
+
+  async function handleClaim(item: PotluckItem, quantity: number, amount: number | null, note: string) {
+    if (!profile) return;
+    try {
+      await claimPotluckItem({
+        itemId: item.id,
+        dinnerId: item.dinnerId,
+        attendeeId: profile.id,
+        attendeeName: profile.name,
+        quantity,
+        contributionAmount: amount,
+        note: note.trim() || null,
+      });
+      await load();
+      haptics.success();
+      show(item.isMoneyRequest ? "Thanks for chipping in!" : "You're on the list — thank you!", "success");
+    } catch {
+      show("Couldn't save that. Please try again.", "error");
+    }
+  }
+
+  async function handleCancelClaim(item: PotluckItem) {
+    const claim = findMyClaim(item, profile?.id);
+    if (!profile || !claim) return;
+    try {
+      await cancelPotluckClaim(claim.id, item.dinnerId, item.id, profile.id);
+      await load();
+    } catch {
+      show("Couldn't cancel that. Please try again.", "error");
     }
   }
 
@@ -165,6 +212,16 @@ export default function DinnerDetail() {
         {myRsvp ? (
           <StatusBanner status={myRsvp.status} />
         ) : null}
+
+        {potluckItems.length > 0 && (
+          <PotluckSection
+            items={potluckItems}
+            myProfileId={profile?.id}
+            canClaim={canClaimPotluck}
+            onClaim={handleClaim}
+            onCancel={handleCancelClaim}
+          />
+        )}
 
         <Button
           label={t("dinner.reportDinner")}
@@ -254,6 +311,150 @@ function StatusBanner({ status }: { status: string }) {
   );
 }
 
+function PotluckSection({
+  items,
+  myProfileId,
+  canClaim,
+  onClaim,
+  onCancel,
+}: {
+  items: PotluckItem[];
+  myProfileId: string | undefined;
+  canClaim: boolean;
+  onClaim: (item: PotluckItem, quantity: number, amount: number | null, note: string) => Promise<void>;
+  onCancel: (item: PotluckItem) => Promise<void>;
+}) {
+  return (
+    <View style={styles.potluckSection}>
+      <Text style={styles.potluckTitle}>{t("dinner.potluck.title")}</Text>
+      <Text style={styles.potluckIntro}>{t("dinner.potluck.intro")}</Text>
+      <Card style={styles.potluckCard} padded={false}>
+        {items.map((item, i) => (
+          <View key={item.id}>
+            {i > 0 ? <Divider /> : null}
+            <PotluckItemRow item={item} myProfileId={myProfileId} canClaim={canClaim} onClaim={onClaim} onCancel={onCancel} />
+          </View>
+        ))}
+      </Card>
+      <Text style={styles.potluckNoPressure}>{t("dinner.potluck.noPressure")}</Text>
+    </View>
+  );
+}
+
+function PotluckItemRow({
+  item,
+  myProfileId,
+  canClaim,
+  onClaim,
+  onCancel,
+}: {
+  item: PotluckItem;
+  myProfileId: string | undefined;
+  canClaim: boolean;
+  onClaim: (item: PotluckItem, quantity: number, amount: number | null, note: string) => Promise<void>;
+  onCancel: (item: PotluckItem) => Promise<void>;
+}) {
+  const [expanded, setExpanded] = useState(false);
+  const [quantity, setQuantity] = useState("1");
+  const [amount, setAmount] = useState(item.moneyAmount ? String(item.moneyAmount) : "");
+  const [note, setNote] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+
+  const myClaim = findMyClaim(item, myProfileId);
+  const fulfilled = isItemFulfilled(item);
+  const progress = item.isMoneyRequest
+    ? t("dinner.potluck.pledged", { amount: pledgedAmount(item) })
+    : t("dinner.potluck.claimedOf", { claimed: claimedQuantity(item), needed: item.quantityNeeded });
+
+  async function submit() {
+    setSubmitting(true);
+    try {
+      await onClaim(item, item.isMoneyRequest ? 1 : Math.max(1, Number(quantity) || 1), item.isMoneyRequest ? Number(amount) || 0 : null, note);
+      setExpanded(false);
+      setNote("");
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  return (
+    <View style={styles.potluckRow}>
+      <View style={styles.potluckRowHeader}>
+        <View style={styles.potluckRowText}>
+          <Text style={styles.potluckItemName}>{item.name}</Text>
+          <Text style={styles.potluckItemProgress}>{progress}</Text>
+          {item.notes ? <Text style={styles.potluckItemNotes}>{item.notes}</Text> : null}
+        </View>
+        {!item.isMoneyRequest && fulfilled && !myClaim ? (
+          <Badge label={t("dinner.potluck.covered")} tone="success" />
+        ) : null}
+      </View>
+
+      {myClaim ? (
+        <View style={styles.potluckClaimedRow}>
+          <Text style={styles.potluckClaimedText}>
+            {item.isMoneyRequest
+              ? t("dinner.potluck.youreChippingIn", { amount: myClaim.contributionAmount ?? 0 })
+              : t("dinner.potluck.youreBringing", { qty: myClaim.quantity })}
+          </Text>
+          <Button
+            label={t("dinner.potluck.cancelClaim")}
+            variant="ghost"
+            size="sm"
+            haptic={false}
+            onPress={() => onCancel(item)}
+          />
+        </View>
+      ) : canClaim && !expanded ? (
+        <Button
+          label={item.isMoneyRequest ? t("dinner.potluck.chipIn") : t("dinner.potluck.bring")}
+          variant="secondary"
+          size="sm"
+          onPress={() => setExpanded(true)}
+          style={styles.potluckClaimBtn}
+        />
+      ) : canClaim && expanded ? (
+        <View style={styles.potluckForm}>
+          {item.isMoneyRequest ? (
+            <TextField
+              label={t("dinner.potluck.amountLabel")}
+              value={amount}
+              onChangeText={setAmount}
+              keyboardType="number-pad"
+            />
+          ) : (
+            <TextField
+              label={t("dinner.potluck.quantityLabel")}
+              value={quantity}
+              onChangeText={setQuantity}
+              keyboardType="number-pad"
+            />
+          )}
+          <TextField label={t("dinner.potluck.noteLabel")} value={note} onChangeText={setNote} />
+          <View style={styles.potluckFormActions}>
+            <Button
+              label={t("dinner.potluck.cancelClaim")}
+              variant="secondary"
+              size="sm"
+              onPress={() => setExpanded(false)}
+              style={styles.potluckFormBtn}
+            />
+            <Button
+              label={t("dinner.potluck.confirm")}
+              size="sm"
+              onPress={submit}
+              loading={submitting}
+              style={styles.potluckFormBtn}
+            />
+          </View>
+        </View>
+      ) : (
+        <Text style={styles.potluckNeedsApproval}>{t("dinner.potluck.needsApproval")}</Text>
+      )}
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.bg },
   headerWrap: { paddingHorizontal: spacing.lg, paddingTop: spacing.md },
@@ -310,4 +511,27 @@ const styles = StyleSheet.create({
   footerPriceValue: { ...typography.h3, color: colors.textPrimary },
   footerPriceUnit: { ...typography.caption, color: colors.textSecondary },
   footerCta: { flex: 1 },
+  potluckSection: { marginBottom: spacing.md },
+  potluckTitle: { ...typography.h3, color: colors.textPrimary, marginBottom: spacing.xs },
+  potluckIntro: { ...typography.caption, color: colors.textSecondary, marginBottom: spacing.md },
+  potluckCard: { paddingVertical: spacing.xs },
+  potluckRow: { paddingVertical: spacing.md, paddingHorizontal: spacing.md },
+  potluckRowHeader: { flexDirection: "row", alignItems: "flex-start" },
+  potluckRowText: { flex: 1 },
+  potluckItemName: { ...typography.bodyBold, color: colors.textPrimary },
+  potluckItemProgress: { ...typography.caption, color: colors.textSecondary, marginTop: 2 },
+  potluckItemNotes: { ...typography.caption, color: colors.textSecondary, marginTop: 2, fontStyle: "italic" },
+  potluckClaimedRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginTop: spacing.sm,
+  },
+  potluckClaimedText: { ...typography.bodyBold, color: colors.success, flex: 1 },
+  potluckClaimBtn: { alignSelf: "flex-start", marginTop: spacing.sm },
+  potluckForm: { marginTop: spacing.sm },
+  potluckFormActions: { flexDirection: "row", gap: spacing.sm, marginTop: spacing.xs },
+  potluckFormBtn: { flex: 1 },
+  potluckNeedsApproval: { ...typography.caption, color: colors.textSecondary, marginTop: spacing.sm },
+  potluckNoPressure: { ...typography.caption, color: colors.textSecondary, marginTop: spacing.sm, textAlign: "center" },
 });

@@ -11,6 +11,7 @@ create type payment_status as enum ('not_required', 'pending', 'paid', 'refunded
 create type sponsor_status as enum ('waitlisted', 'active');
 create type report_target_type as enum ('profile', 'dinner');
 create type report_status as enum ('open', 'reviewed', 'actioned');
+create type potluck_category as enum ('food', 'drink', 'supplies', 'money', 'other');
 
 -- One row per authenticated user (id matches auth.users.id).
 create table profiles (
@@ -83,6 +84,32 @@ create table rsvps (
   unique (dinner_id, attendee_id)
 );
 
+-- Potluck-style checklist: a host lists things the dinner needs (food, drinks, supplies, or a cash
+-- contribution instead of a physical item); attendees sign up against the list. Money-splitting /
+-- expected-value logic is intentionally out of scope here and lands in a later pass.
+create table potluck_items (
+  id uuid primary key default uuid_generate_v4(),
+  dinner_id uuid not null references dinners (id) on delete cascade,
+  name text not null,
+  category potluck_category not null default 'other',
+  quantity_needed integer not null default 1 check (quantity_needed > 0),
+  is_money_request boolean not null default false,
+  money_amount numeric, -- suggested contribution when is_money_request is true
+  notes text,
+  created_at timestamptz not null default now()
+);
+
+create table potluck_claims (
+  id uuid primary key default uuid_generate_v4(),
+  item_id uuid not null references potluck_items (id) on delete cascade,
+  attendee_id uuid not null references profiles (id) on delete cascade,
+  quantity integer not null default 1 check (quantity > 0),
+  contribution_amount numeric, -- amount pledged when the item is a money request
+  note text,
+  created_at timestamptz not null default now(),
+  unique (item_id, attendee_id)
+);
+
 create table messages (
   id uuid primary key default uuid_generate_v4(),
   dinner_id uuid not null references dinners (id) on delete cascade,
@@ -112,6 +139,8 @@ alter table host_details enable row level security;
 alter table sponsor_details enable row level security;
 alter table dinners enable row level security;
 alter table rsvps enable row level security;
+alter table potluck_items enable row level security;
+alter table potluck_claims enable row level security;
 alter table messages enable row level security;
 alter table reports enable row level security;
 
@@ -148,6 +177,49 @@ create policy "attendee or host can update an rsvp" on rsvps
   for update using (
     auth.uid() = attendee_id
     or auth.uid() in (select host_id from dinners where dinners.id = rsvps.dinner_id)
+  );
+
+create policy "potluck items are viewable by authenticated users" on potluck_items
+  for select using (auth.role() = 'authenticated');
+create policy "hosts add items to their own dinners" on potluck_items
+  for insert with check (auth.uid() in (select host_id from dinners where dinners.id = potluck_items.dinner_id));
+create policy "hosts update items on their own dinners" on potluck_items
+  for update using (auth.uid() in (select host_id from dinners where dinners.id = potluck_items.dinner_id));
+create policy "hosts delete items on their own dinners" on potluck_items
+  for delete using (auth.uid() in (select host_id from dinners where dinners.id = potluck_items.dinner_id));
+
+-- Claims reveal who is bringing/pledging what, so visibility mirrors the contact-exchange rule
+-- (§5.7/§8 of the product bible): the claimant, the host, and guests already approved for the
+-- dinner can see them; a claim can only be made once an attendee's RSVP is approved.
+create policy "claim visible to claimant, host, or approved dinner guests" on potluck_claims
+  for select using (
+    auth.uid() = attendee_id
+    or auth.uid() in (
+      select d.host_id from potluck_items i join dinners d on d.id = i.dinner_id
+      where i.id = potluck_claims.item_id
+    )
+    or auth.uid() in (
+      select r.attendee_id from rsvps r join potluck_items i on i.dinner_id = r.dinner_id
+      where i.id = potluck_claims.item_id and r.status = 'approved'
+    )
+  );
+create policy "approved attendees can claim potluck items" on potluck_claims
+  for insert with check (
+    auth.uid() = attendee_id
+    and auth.uid() in (
+      select r.attendee_id from rsvps r join potluck_items i on i.dinner_id = r.dinner_id
+      where i.id = potluck_claims.item_id and r.status = 'approved'
+    )
+  );
+create policy "attendee updates their own claim" on potluck_claims
+  for update using (auth.uid() = attendee_id);
+create policy "attendee or host can remove a claim" on potluck_claims
+  for delete using (
+    auth.uid() = attendee_id
+    or auth.uid() in (
+      select d.host_id from potluck_items i join dinners d on d.id = i.dinner_id
+      where i.id = potluck_claims.item_id
+    )
   );
 
 create policy "participants can read their messages" on messages

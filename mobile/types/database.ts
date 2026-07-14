@@ -12,6 +12,7 @@ export type PaymentStatus = "not_required" | "pending" | "paid" | "refunded";
 export type SponsorStatus = "waitlisted" | "active";
 export type ReportTargetType = "profile" | "dinner";
 export type ReportStatus = "open" | "reviewed" | "actioned";
+export type PotluckCategory = "food" | "drink" | "supplies" | "money" | "other";
 
 export interface Database {
   public: {
@@ -114,6 +115,40 @@ export interface Database {
           attendee_id: string;
         };
         Update: Partial<Database["public"]["Tables"]["rsvps"]["Row"]>;
+      };
+      potluck_items: {
+        Row: {
+          id: string;
+          dinner_id: string;
+          name: string;
+          category: PotluckCategory;
+          quantity_needed: number;
+          is_money_request: boolean;
+          money_amount: number | null;
+          notes: string | null;
+          created_at: string;
+        };
+        Insert: Partial<Database["public"]["Tables"]["potluck_items"]["Row"]> & {
+          dinner_id: string;
+          name: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["potluck_items"]["Row"]>;
+      };
+      potluck_claims: {
+        Row: {
+          id: string;
+          item_id: string;
+          attendee_id: string;
+          quantity: number;
+          contribution_amount: number | null;
+          note: string | null;
+          created_at: string;
+        };
+        Insert: Partial<Database["public"]["Tables"]["potluck_claims"]["Row"]> & {
+          item_id: string;
+          attendee_id: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["potluck_claims"]["Row"]>;
       };
       messages: {
         Row: {

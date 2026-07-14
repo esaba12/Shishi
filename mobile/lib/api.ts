@@ -1,8 +1,8 @@
 import { supabase } from "@/lib/supabase";
 import { isSupabaseConfigured } from "@/lib/env";
-import { mockDinners, mockMessages, mockRsvps, mockThreads } from "@/data/mock";
-import type { ApprovalMode, KosherLevel } from "@/types/database";
-import type { ChatMessage, Dinner, MessageThread, Profile, Role } from "@/types";
+import { mockDinners, mockMessages, mockPotluckItems, mockRsvps, mockThreads } from "@/data/mock";
+import type { ApprovalMode, KosherLevel, PotluckCategory } from "@/types/database";
+import type { ChatMessage, Dinner, MessageThread, PotluckClaim, PotluckItem, Profile, Role } from "@/types";
 
 /** Hours before a dinner's start time that the exact address becomes visible to confirmed attendees. */
 export const ADDRESS_REVEAL_HOURS_BEFORE = 24;
@@ -260,6 +260,175 @@ export async function fetchRsvpsForDinner(dinnerId: string): Promise<DinnerRsvp[
 export async function updateRsvpStatus(rsvpId: string, status: "approved" | "declined"): Promise<void> {
   if (!isSupabaseConfigured) return;
   const { error } = await supabase.from("rsvps").update({ status }).eq("id", rsvpId);
+  if (error) throw error;
+}
+
+function rowToPotluckClaim(row: any): PotluckClaim {
+  return {
+    id: row.id,
+    itemId: row.item_id,
+    attendeeId: row.attendee_id,
+    attendeeName: row.attendee?.name ?? "Guest",
+    attendeePhotoUrl: row.attendee?.photo_url ?? null,
+    quantity: row.quantity,
+    contributionAmount: row.contribution_amount != null ? Number(row.contribution_amount) : null,
+    note: row.note ?? null,
+    createdAt: row.created_at,
+  };
+}
+
+function rowToPotluckItem(row: any): PotluckItem {
+  return {
+    id: row.id,
+    dinnerId: row.dinner_id,
+    name: row.name,
+    category: row.category,
+    quantityNeeded: row.quantity_needed,
+    isMoneyRequest: row.is_money_request,
+    moneyAmount: row.money_amount != null ? Number(row.money_amount) : null,
+    notes: row.notes ?? null,
+    claims: (row.claims ?? []).map(rowToPotluckClaim),
+    createdAt: row.created_at,
+  };
+}
+
+/** Checklist for a dinner's potluck contributions, with each item's claims attached. Visible to
+ *  anyone who can see the dinner; RLS narrows which *claims* (names) come back per §5.7/§8 — only
+ *  the host, the claimant, and already-approved guests see who claimed what. */
+export async function fetchPotluckItems(dinnerId: string): Promise<PotluckItem[]> {
+  if (!isSupabaseConfigured) {
+    return mockPotluckItems[dinnerId] ?? [];
+  }
+  const { data, error } = await supabase
+    .from("potluck_items")
+    .select("*, claims:potluck_claims(*, attendee:profiles!potluck_claims_attendee_id_fkey(name, photo_url))")
+    .eq("dinner_id", dinnerId)
+    .order("created_at", { ascending: true });
+  if (error) throw error;
+  return (data ?? []).map(rowToPotluckItem);
+}
+
+export interface CreatePotluckItemInput {
+  dinnerId: string;
+  name: string;
+  category: PotluckCategory;
+  quantityNeeded: number;
+  isMoneyRequest: boolean;
+  moneyAmount: number | null;
+  notes: string | null;
+}
+
+/** Host-only: add a thing the dinner needs — a food/drink/supply item, or a money request for
+ *  guests who'd rather chip in than bring something physical. */
+export async function createPotluckItem(input: CreatePotluckItemInput): Promise<PotluckItem> {
+  if (!isSupabaseConfigured) {
+    const item: PotluckItem = {
+      id: `mock-item-${Date.now()}`,
+      dinnerId: input.dinnerId,
+      name: input.name,
+      category: input.category,
+      quantityNeeded: input.quantityNeeded,
+      isMoneyRequest: input.isMoneyRequest,
+      moneyAmount: input.moneyAmount,
+      notes: input.notes,
+      claims: [],
+      createdAt: new Date().toISOString(),
+    };
+    mockPotluckItems[input.dinnerId] = [...(mockPotluckItems[input.dinnerId] ?? []), item];
+    return item;
+  }
+  const { data, error } = await supabase
+    .from("potluck_items")
+    .insert({
+      dinner_id: input.dinnerId,
+      name: input.name,
+      category: input.category,
+      quantity_needed: input.quantityNeeded,
+      is_money_request: input.isMoneyRequest,
+      money_amount: input.moneyAmount,
+      notes: input.notes,
+    })
+    .select()
+    .single();
+  if (error) throw error;
+  return rowToPotluckItem({ ...data, claims: [] });
+}
+
+/** Host-only: remove an item from the checklist (also clears any claims against it). */
+export async function deletePotluckItem(itemId: string, dinnerId: string): Promise<void> {
+  if (!isSupabaseConfigured) {
+    mockPotluckItems[dinnerId] = (mockPotluckItems[dinnerId] ?? []).filter((i) => i.id !== itemId);
+    return;
+  }
+  const { error } = await supabase.from("potluck_items").delete().eq("id", itemId);
+  if (error) throw error;
+}
+
+export interface ClaimPotluckItemInput {
+  itemId: string;
+  dinnerId: string;
+  attendeeId: string;
+  attendeeName: string;
+  quantity: number;
+  contributionAmount: number | null;
+  note: string | null;
+}
+
+/** Attendee-only, and only once their RSVP is approved (enforced server-side too): sign up to
+ *  bring an item, or pledge a contribution instead. One claim per attendee per item — calling this
+ *  again updates the existing claim rather than creating a duplicate. */
+export async function claimPotluckItem(input: ClaimPotluckItemInput): Promise<PotluckClaim> {
+  if (!isSupabaseConfigured) {
+    const claim: PotluckClaim = {
+      id: `mock-claim-${Date.now()}`,
+      itemId: input.itemId,
+      attendeeId: input.attendeeId,
+      attendeeName: input.attendeeName,
+      attendeePhotoUrl: null,
+      quantity: input.quantity,
+      contributionAmount: input.contributionAmount,
+      note: input.note,
+      createdAt: new Date().toISOString(),
+    };
+    const items = mockPotluckItems[input.dinnerId] ?? [];
+    const item = items.find((i) => i.id === input.itemId);
+    if (item) {
+      item.claims = [...item.claims.filter((c) => c.attendeeId !== input.attendeeId), claim];
+    }
+    return claim;
+  }
+  const { data, error } = await supabase
+    .from("potluck_claims")
+    .upsert(
+      {
+        item_id: input.itemId,
+        attendee_id: input.attendeeId,
+        quantity: input.quantity,
+        contribution_amount: input.contributionAmount,
+        note: input.note,
+      },
+      { onConflict: "item_id,attendee_id" }
+    )
+    .select()
+    .single();
+  if (error) throw error;
+  return rowToPotluckClaim({ ...data, attendee: { name: input.attendeeName } });
+}
+
+/** Attendee cancels their own claim (or a host frees it up on someone's behalf). */
+export async function cancelPotluckClaim(
+  claimId: string,
+  dinnerId: string,
+  itemId: string,
+  attendeeId: string
+): Promise<void> {
+  if (!isSupabaseConfigured) {
+    const items = mockPotluckItems[dinnerId] ?? [];
+    const item = items.find((i) => i.id === itemId);
+    if (item) item.claims = item.claims.filter((c) => c.attendeeId !== attendeeId);
+    return;
+  }
+  const { error } = await supabase.from("potluck_claims").delete().eq("id", claimId);
   if (error) throw error;
 }
 
