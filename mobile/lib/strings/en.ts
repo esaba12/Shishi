@@ -1,0 +1,55 @@
+// English strings. Complete for the flagship attendee flow (Discover → Dinner detail → Checkout).
+// Keys are namespaced by screen/domain. Interpolation uses i18n-js `%{name}` syntax; plural keys use
+// { one, other } and are selected by passing `{ count }` to t().
+export const en = {
+  common: {
+    free: "Free",
+    full: "Full",
+    seatsLeft: { one: "%{count} seat left", other: "%{count} seats left" },
+    report: "Report",
+  },
+  discover: {
+    greeting: "Shabbat shalom",
+    title: "Find a table",
+    subtitle: "Warm Shabbat dinners near you in Tel Aviv",
+    all: "All",
+    map: "Map",
+    list: "List",
+    emptyTitle: "No dinners posted yet",
+    emptyBody: "Check back soon — or be the first to host one from the Profile tab.",
+    host: "Host a dinner",
+    perPerson: "per person",
+  },
+  dinner: {
+    title: "Dinner details",
+    hostedShabbats: { one: "Hosted %{count} Shabbat", other: "Hosted %{count} Shabbats" },
+    when: "When",
+    where: "Where",
+    kosher: "Kosher level",
+    cost: "Cost",
+    seats: "Seats",
+    seatsValue: "%{left} of %{total} left",
+    addressHidden: "%{area} · exact address shared closer to the date",
+    addressLocked: "Address unlocks once you're confirmed, closer to the date",
+    costPerPerson: "₪%{amount} per person",
+    confirmed: "You're confirmed for this dinner.",
+    pending: "Request sent — waiting on the host to approve.",
+    declined: "The host wasn't able to accept your request this time.",
+    rsvp: "RSVP",
+    getTicket: "Get a ticket",
+    requestToJoin: "Request to join",
+    reportDinner: "Report this dinner",
+  },
+  checkout: {
+    title: "Get your ticket",
+    hostShabbat: "%{host}'s Shabbat",
+    total: "Total",
+    pay: "Pay ₪%{amount}",
+    chargeNotice: "You won't be charged until your seat is confirmed.",
+    demoNotice: "Demo mode: no Stripe key configured yet, so this simulates a successful payment.",
+    failed: "Payment failed, please try again.",
+  },
+};
+
+// Widened (no `as const`) so locale files can supply their own strings for the same shape.
+export type Strings = typeof en;

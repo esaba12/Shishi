@@ -1,0 +1,52 @@
+{
+  "expo": {
+    "name": "Shishi",
+    "slug": "shishi",
+    "scheme": "shishi",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "backgroundColor": "#FFF7F9",
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#FFF7F9"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "org.shishi.app"
+    },
+    "android": {
+      "package": "org.shishi.app",
+      "adaptiveIcon": {
+        "backgroundColor": "#FFE1EA",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false,
+      "config": {
+        "googleMaps": {
+          "apiKey": "REPLACE_WITH_ANDROID_GOOGLE_MAPS_KEY"
+        }
+      }
+    },
+    "plugins": [
+      "expo-router",
+      "expo-status-bar",
+      "expo-secure-store",
+      "expo-image-picker",
+      [
+        "@stripe/stripe-react-native",
+        {
+          "merchantIdentifier": "merchant.org.shishi",
+          "enableGooglePay": true
+        }
+      ],
+      "@react-native-community/datetimepicker",
+      "expo-image",
+      "expo-localization"
+    ]
+  }
+}

@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Shishi app-icon source. The mark is a serif Hebrew shin (ש) on the brand rose-red — Shishi (שישי,
+  "Friday", the day Shabbat begins) starts with shin. This mirrors components/brand/Logo.tsx.
+  Export to PNG for the app (1024×1024 icon.png; a 432×432 foreground on a #FFE1EA background for
+  Android adaptive). Keeping the vector source here makes re-export / a designer handoff trivial.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <rect width="1024" height="1024" rx="232" fill="#E11D48"/>
+  <text x="512" y="560" text-anchor="middle" dominant-baseline="central"
+        font-family="Frank Ruhl Libre, Georgia, 'Times New Roman', serif" font-weight="700"
+        font-size="720" fill="#FFFFFF">ש</text>
+</svg>

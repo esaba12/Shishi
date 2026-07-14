@@ -1,0 +1,41 @@
+---
+description: Shishi product bible — non-negotiable source of truth for all product/feature decisions
+alwaysApply: true
+---
+
+# The Bible
+
+`docs/PRODUCT_BIBLE.md` is the full, verbatim product spec for Shishi (a three-sided Shabbat-dinner
+platform: Sponsor, Host, Attendee). It is the source of truth for what we're building. **Untouchable:**
+don't edit it, reinterpret it, or quietly deviate from it. Read it before doing any product/feature work
+that isn't purely mechanical (bug fixes, refactors, styling).
+
+## Non-negotiables
+
+- Three pillars only: **Sponsor/Donor**, **Host**, **Attendee**. Every feature serves one of these three
+  (§3). A person can hold multiple roles.
+- Sponsorship is a **mandatory pillar of the product** but **optional per dinner** — never require a
+  sponsor to create, run, or attend a dinner (§3, §12).
+- Onboarding must stay **effortless**. Only collect the exact fields listed in §6 by default; anything
+  else is friction and belongs behind `V2`/`Later`, not MVP.
+- A dinner's **precise address is hidden until close to the date** — never surface it at RSVP time (§8).
+- Contact between sponsor↔host and host↔attendee is exchanged **only after match/approval**, never
+  before (§5.7, §8).
+- Dinners must be **approved before they can enter the donor feed / receive sponsorship** — this is the
+  core anti-fraud gate, don't bypass it (§5.10, §8).
+- Respect the `MVP` / `V2` / `Later` tags (§5, §10) when scoping work. Don't build V2/Later scope into
+  the MVP path unless the user explicitly asks for it.
+
+## Open questions (§11) are still open
+
+Naming, whether attendees pay, cross-border/tax-deductible money movement, FX handling, platform
+revenue model, and legal identity-verification limits in Israel are all **unresolved**. If a task
+depends on one of these, say so and ask rather than silently picking an answer — these are
+structural/legal decisions, not implementation details.
+
+## Working from the bible
+
+- Map new features back to a line item in `docs/PRODUCT_BIBLE.md`. If a request isn't in there, flag
+  that it's new scope instead of quietly folding it in as if it always existed.
+- Use the bible's terminology exactly: Sponsor, Host, Attendee, donor feed, dinner, budget needed,
+  seeking sponsorship, RSVP, kosher level, etc. Don't invent new names for these concepts.
