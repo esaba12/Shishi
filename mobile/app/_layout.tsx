@@ -17,6 +17,7 @@ import {
   Rubik_700Bold,
 } from "@expo-google-fonts/rubik";
 import { AuthProvider } from "@/context/AuthContext";
+import { DemoThemeProvider } from "@/context/DemoThemeContext";
 import { ToastProvider } from "@/components/ui/Toast";
 import { PaymentProvider } from "@/components/PaymentProvider";
 import { colors } from "@/constants/theme";
@@ -54,12 +55,14 @@ export default function RootLayout() {
   return (
     <SafeAreaProvider>
       <ToastProvider>
-        <AuthProvider>
-          <PaymentProvider>
-            <StatusBar style="dark" />
-            <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.bg } }} />
-          </PaymentProvider>
-        </AuthProvider>
+        <DemoThemeProvider>
+          <AuthProvider>
+            <PaymentProvider>
+              <StatusBar style="dark" />
+              <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.bg } }} />
+            </PaymentProvider>
+          </AuthProvider>
+        </DemoThemeProvider>
       </ToastProvider>
     </SafeAreaProvider>
   );

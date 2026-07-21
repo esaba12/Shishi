@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/Button";
 import { Logo } from "@/components/brand/Logo";
 import { DesktopLanding } from "@/components/landing/DesktopLanding";
 import { colors, spacing, typography } from "@/constants/theme";
-import { isSupabaseConfigured } from "@/lib/env";
 import { useResponsive } from "@/lib/responsive";
 import type { Role } from "@/types";
 
@@ -20,16 +19,24 @@ export default function Welcome() {
     router.push("/(auth)/login");
   }
   function demo() {
-    router.push("/(auth)/demo-role");
+    router.push("/(auth)/organization-select");
+  }
+  function requestJoin() {
+    router.push("/(auth)/request-join");
+  }
+  function documentIntake() {
+    router.push("/(auth)/document-intake");
   }
 
   if (isDesktop) {
     return (
       <Screen scroll={false} padded={false} fullBleed>
         <DesktopLanding
-          onGetStarted={getStarted}
-          onLogIn={isSupabaseConfigured ? logIn : undefined}
-          onDemo={!isSupabaseConfigured ? demo : undefined}
+          onGetStarted={() => getStarted()}
+          onLogIn={logIn}
+          onDemo={demo}
+          onRequestJoin={requestJoin}
+          onDocumentIntake={documentIntake}
         />
       </Screen>
     );
@@ -41,15 +48,23 @@ export default function Welcome() {
         <View style={styles.logoWrap}>
           <Logo size={40} />
         </View>
-        <Text style={styles.tagline}>A seat at the table for every Jew who wants one.</Text>
+        <Text style={styles.tagline}>Turn planning data into clear next steps.</Text>
         <Text style={styles.subtitle}>
-          Find a Shabbat table to join, or open your home to someone who needs one.
+          Bring your organization&apos;s files together, surface what needs attention, and leave every
+          review with practical next steps.
         </Text>
+        <View style={styles.statRow}>
+          <View style={styles.stat}><Text style={styles.statValue}>12</Text><Text style={styles.statLabel}>organizations exploring</Text></View>
+          <View style={styles.stat}><Text style={styles.statValue}>3 min</Text><Text style={styles.statLabel}>to a first review</Text></View>
+        </View>
+        <Text style={styles.statNote}>Illustrative demo metrics</Text>
       </View>
       <View style={styles.actions}>
-        <Button label="Get started" onPress={getStarted} />
-        {isSupabaseConfigured && <Button label="Log in" variant="secondary" onPress={logIn} />}
-        {!isSupabaseConfigured && <Button label="Continue as demo user" variant="ghost" onPress={demo} />}
+        <Button label="Create an account" onPress={getStarted} />
+        <Button label="Sign in" variant="secondary" onPress={logIn} />
+        <Button label="Explore the UIUC demo" variant="ghost" onPress={demo} />
+        <Button label="What we need from you" variant="ghost" onPress={documentIntake} />
+        <Button label="Request to join" variant="ghost" onPress={requestJoin} />
       </View>
     </Screen>
   );
@@ -72,6 +87,11 @@ const styles = StyleSheet.create({
     ...typography.body,
     color: colors.textSecondary,
   },
+  statRow: { flexDirection: "row", gap: spacing.xl, marginTop: spacing.xl, marginBottom: spacing.lg },
+  stat: { flex: 1 },
+  statValue: { ...typography.h2, color: colors.textPrimary },
+  statLabel: { ...typography.caption, color: colors.textSecondary },
+  statNote: { ...typography.caption, color: colors.textSecondary, marginTop: -spacing.sm, marginBottom: spacing.lg },
   actions: {
     paddingBottom: spacing.lg,
     gap: spacing.sm,

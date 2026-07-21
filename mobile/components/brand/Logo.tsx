@@ -1,16 +1,19 @@
 import React from "react";
 import { StyleSheet, Text, View, ViewStyle } from "react-native";
 import { colors, fonts, radii, spacing } from "@/constants/theme";
+import { useDemoTheme } from "@/context/DemoThemeContext";
 
 /** The Shishi mark: a rose-red rounded square holding a serif Hebrew "ש" (shin) — Shishi (שישי,
  *  "Friday", the day Shabbat begins) starts with shin. Built from Views + type so it stays crisp at
  *  any size with no SVG/raster dependency. Reused for the app icon source. */
 export function LogoMark({ size = 40, style }: { size?: number; style?: ViewStyle }) {
+  const { theme } = useDemoTheme();
   return (
     <View
       style={[
         styles.mark,
         { width: size, height: size, borderRadius: size * 0.3 },
+        { backgroundColor: theme.brand },
         style,
       ]}
     >
@@ -21,10 +24,11 @@ export function LogoMark({ size = 40, style }: { size?: number; style?: ViewStyl
 
 /** Full horizontal lockup: mark + "Shishi" wordmark in the display serif. */
 export function Logo({ size = 34 }: { size?: number }) {
+  const { theme } = useDemoTheme();
   return (
     <View style={styles.lockup}>
       <LogoMark size={size} />
-      <Text style={[styles.wordmark, { fontSize: size * 0.82 }]}>Shishi</Text>
+      <Text style={[styles.wordmark, { fontSize: size * 0.82, color: theme.brandDark }]}>Shishi</Text>
     </View>
   );
 }
