@@ -85,6 +85,9 @@ export default function EmailEntry() {
       />
       {error ? <Text style={styles.error}>{error}</Text> : null}
       <Button label="Send link" onPress={handleContinue} loading={loading} disabled={!email.includes("@")} />
+      {isSupabaseConfigured && (
+        <Button label="Already have an account? Log in" variant="ghost" onPress={() => router.replace("/(auth)/login")} />
+      )}
     </Screen>
   );
 }
