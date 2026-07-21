@@ -7,12 +7,13 @@ import { DesktopLanding } from "@/components/landing/DesktopLanding";
 import { colors, spacing, typography } from "@/constants/theme";
 import { isSupabaseConfigured } from "@/lib/env";
 import { useResponsive } from "@/lib/responsive";
+import type { Role } from "@/types";
 
 export default function Welcome() {
   const { isDesktop } = useResponsive();
 
-  function getStarted() {
-    router.push("/(auth)/email");
+  function getStarted(role?: Role) {
+    router.push(role ? { pathname: "/(auth)/email", params: { role } } : "/(auth)/email");
   }
   function demo() {
     router.push("/(auth)/demo-role");

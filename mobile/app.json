@@ -54,7 +54,6 @@
           "enableGooglePay": true
         }
       ],
-      "@react-native-community/datetimepicker",
       "expo-image",
       "expo-localization"
     ]
