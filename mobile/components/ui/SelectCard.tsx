@@ -5,6 +5,7 @@ import { colors, radii, spacing, typography } from "@/constants/theme";
 import { haptics } from "@/lib/haptics";
 import { useReducedMotion } from "@/lib/useReducedMotion";
 import { Badge } from "./Badge";
+import { useDemoTheme } from "@/context/DemoThemeContext";
 
 interface SelectCardProps {
   title: string;
@@ -20,6 +21,7 @@ interface SelectCardProps {
 // Selecting a card lights it: a soft warm glow blooms behind it and the trailing checkbox fills in,
 // echoing the brand's candlelight motif rather than a generic tick.
 export function SelectCard({ title, description, icon, selected, onPress, badge, style }: SelectCardProps) {
+  const { theme } = useDemoTheme();
   const reducedMotion = useReducedMotion();
   const scale = useRef(new Animated.Value(1)).current;
   const glow = useRef(new Animated.Value(selected ? 1 : 0)).current;
@@ -54,6 +56,7 @@ export function SelectCard({ title, description, icon, selected, onPress, badge,
         pointerEvents="none"
         style={[
           styles.glow,
+          { backgroundColor: theme.brandSoft, shadowColor: theme.brand },
           {
             opacity: glow,
             transform: [{ scale: glow.interpolate({ inputRange: [0, 1], outputRange: [0.94, 1] }) }],
@@ -64,10 +67,10 @@ export function SelectCard({ title, description, icon, selected, onPress, badge,
         onPress={handlePress}
         onPressIn={() => spring(0.98)}
         onPressOut={() => spring(1)}
-        style={[styles.card, selected && styles.cardSelected]}
+        style={[styles.card, selected && { borderColor: theme.brand }]}
       >
-        <View style={[styles.iconWrap, selected && styles.iconWrapSelected]}>
-          <Ionicons name={icon} size={20} color={selected ? colors.onBrand : colors.brand} />
+        <View style={[styles.iconWrap, { backgroundColor: theme.brandSoft }, selected && { backgroundColor: theme.brand }]}>
+          <Ionicons name={icon} size={20} color={selected ? theme.onBrand : theme.brand} />
         </View>
         <View style={styles.body}>
           <View style={styles.titleRow}>
@@ -76,9 +79,9 @@ export function SelectCard({ title, description, icon, selected, onPress, badge,
           </View>
           <Text style={styles.description}>{description}</Text>
         </View>
-        <View style={[styles.checkbox, selected && styles.checkboxSelected]}>
+        <View style={[styles.checkbox, selected && { backgroundColor: theme.brand, borderColor: theme.brand }]}>
           <Animated.View style={{ opacity: check, transform: [{ scale: check }] }}>
-            <Ionicons name="checkmark" size={14} color={colors.onBrand} />
+            <Ionicons name="checkmark" size={14} color={theme.onBrand} />
           </Animated.View>
         </View>
       </Pressable>
