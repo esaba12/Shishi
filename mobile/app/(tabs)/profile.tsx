@@ -9,7 +9,7 @@ import { useAuth } from "@/context/AuthContext";
 const ROLE_LABELS: Record<string, string> = {
   attendee: "Attendee",
   host: "Host",
-  sponsor: "Sponsor (waitlisted)",
+  sponsor: "Sponsor",
 };
 
 export default function Profile() {
@@ -86,7 +86,7 @@ const styles = StyleSheet.create({
     width: 88,
     height: 88,
     borderRadius: 44,
-    backgroundColor: colors.accent,
+    backgroundColor: colors.brand,
     alignItems: "center",
     justifyContent: "center",
     marginBottom: spacing.sm,
@@ -94,7 +94,7 @@ const styles = StyleSheet.create({
   },
   avatarImage: { width: "100%", height: "100%" },
   avatarInitial: { color: "#fff", fontWeight: "700", fontSize: 32 },
-  name: { ...typography.h2, color: colors.text, marginBottom: spacing.xs },
+  name: { ...typography.h2, color: colors.textPrimary, marginBottom: spacing.xs },
   rolesRow: { flexDirection: "row", flexWrap: "wrap", justifyContent: "center" },
   roleBadge: {
     backgroundColor: "#F4E3D3",
@@ -104,7 +104,7 @@ const styles = StyleSheet.create({
     marginHorizontal: 4,
     marginTop: 4,
   },
-  roleBadgeText: { ...typography.caption, color: colors.primaryDark },
+  roleBadgeText: { ...typography.caption, color: colors.brandDark },
   card: {
     backgroundColor: colors.surface,
     borderWidth: 1,
@@ -113,10 +113,10 @@ const styles = StyleSheet.create({
     padding: spacing.md,
     marginBottom: spacing.md,
   },
-  cardTitle: { ...typography.bodyBold, color: colors.text, marginBottom: spacing.xs },
-  cardBody: { ...typography.body, color: colors.textMuted },
-  stat: { ...typography.caption, color: colors.textMuted, marginTop: spacing.xs },
+  cardTitle: { ...typography.bodyBold, color: colors.textPrimary, marginBottom: spacing.xs },
+  cardBody: { ...typography.body, color: colors.textSecondary },
+  stat: { ...typography.caption, color: colors.textSecondary, marginTop: spacing.xs },
   infoRow: { flexDirection: "row", justifyContent: "space-between", paddingVertical: 4 },
-  infoLabel: { ...typography.caption, color: colors.textMuted },
-  infoValue: { ...typography.body, color: colors.text, flex: 1, textAlign: "right" },
+  infoLabel: { ...typography.caption, color: colors.textSecondary },
+  infoValue: { ...typography.body, color: colors.textPrimary, flex: 1, textAlign: "right" },
 });

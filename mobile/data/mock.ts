@@ -1,4 +1,5 @@
-import type { ChatMessage, Dinner, MessageThread, PotluckItem, Profile } from "@/types";
+import type { ChatMessage, Dinner, MessageThread, PotluckItem, Profile, SponsorDonation } from "@/types";
+import { threadKey } from "@/lib/threadKey";
 
 // Used only when Supabase isn't configured yet (see lib/env.ts), so the app is
 // click-through-able out of the box. Swapped out automatically once real env vars are set.
@@ -39,6 +40,9 @@ export const mockDinners: Dinner[] = [
     approvalMode: "auto_accept",
     budgetNeeded: null,
     seekingSponsorship: false,
+    dinnerTypeTags: [],
+    sponsorApproved: false,
+    amountFunded: 0,
     status: "published",
   },
   {
@@ -60,6 +64,9 @@ export const mockDinners: Dinner[] = [
     approvalMode: "host_approves",
     budgetNeeded: null,
     seekingSponsorship: false,
+    dinnerTypeTags: ["Quiet & intimate", "Traditional"],
+    sponsorApproved: false,
+    amountFunded: 0,
     status: "published",
   },
   {
@@ -81,6 +88,59 @@ export const mockDinners: Dinner[] = [
     approvalMode: "auto_accept",
     budgetNeeded: null,
     seekingSponsorship: false,
+    dinnerTypeTags: ["Big & lively", "Musical"],
+    sponsorApproved: false,
+    amountFunded: 0,
+    status: "published",
+  },
+  {
+    id: "d4",
+    hostId: "h4",
+    hostName: "Noa Shapira",
+    hostPhotoUrl: null,
+    hostDinnersHostedCount: 1,
+    date: "2026-07-17",
+    startTime: "19:15",
+    capacity: 10,
+    seatsTaken: 4,
+    area: "Florentin, Tel Aviv",
+    exactAddress: "21 Vital St",
+    kosherLevel: "kosher",
+    costPerHead: 0,
+    isFree: true,
+    description:
+      "First-time host opening my home to new olim and lone soldiers. Home-cooked, no pressure, just company.",
+    approvalMode: "host_approves",
+    budgetNeeded: 450,
+    seekingSponsorship: true,
+    dinnerTypeTags: ["Olim (new immigrants)", "Young professionals"],
+    sponsorApproved: true,
+    amountFunded: 150,
+    status: "published",
+  },
+  {
+    id: "d5",
+    hostId: "h5",
+    hostName: "Eitan Gross",
+    hostPhotoUrl: null,
+    hostDinnersHostedCount: 4,
+    date: "2026-07-17",
+    startTime: "20:00",
+    capacity: 14,
+    seatsTaken: 6,
+    area: "Jaffa, Tel Aviv",
+    exactAddress: "3 Yefet St",
+    kosherLevel: "strictly_kosher",
+    costPerHead: 0,
+    isFree: true,
+    description:
+      "Monthly big-table Shabbat for students studying in Tel Aviv — subsidizing the whole table so cost is never the reason someone skips it.",
+    approvalMode: "auto_accept",
+    budgetNeeded: 800,
+    seekingSponsorship: true,
+    dinnerTypeTags: ["Students", "Big & lively"],
+    sponsorApproved: true,
+    amountFunded: 0,
     status: "published",
   },
 ];
@@ -132,9 +192,10 @@ export const mockPotluckItems: Record<string, PotluckItem[]> = {
 
 export const mockThreads: MessageThread[] = [
   {
-    id: "t1",
+    id: threadKey("d1", "h1"),
     dinnerId: "d1",
     dinnerTitle: "Shabbat with Jonathan",
+    counterpartId: "h1",
     counterpartName: "Jonathan Levi",
     counterpartPhotoUrl: null,
     lastMessage: "Great, see you at 19:30! Address is 12 Herzl St.",
@@ -144,7 +205,7 @@ export const mockThreads: MessageThread[] = [
 ];
 
 export const mockMessages: Record<string, ChatMessage[]> = {
-  t1: [
+  [threadKey("d1", "h1")]: [
     {
       id: "m1",
       senderId: "h1",
@@ -165,3 +226,23 @@ export const mockMessages: Record<string, ChatMessage[]> = {
     },
   ],
 };
+
+// Seeded so the sponsor donor feed isn't empty out of the box in demo mode. Donations are keyed
+// loosely by dinner \u2014 a real sponsor session mutates this array via lib/api.ts the same way
+// mockDinners/mockRsvps are mutated elsewhere.
+export const mockDonations: SponsorDonation[] = [
+  {
+    id: "don1",
+    dinnerId: "d4",
+    hostId: "h4",
+    sponsorId: "mock-sponsor",
+    donorLegalName: "Sarah Klein",
+    donorReceiptEmail: "sarah.klein@example.com",
+    amount: 150,
+    currency: "ils",
+    status: "succeeded",
+    message: "So glad this exists \u2014 enjoy Shabbat!",
+    anonymous: false,
+    createdAt: "2026-07-10T09:00:00Z",
+  },
+];

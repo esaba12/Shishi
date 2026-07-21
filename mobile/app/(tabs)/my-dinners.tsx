@@ -94,7 +94,7 @@ export default function MyDinners() {
 
 const styles = StyleSheet.create({
   header: { paddingHorizontal: spacing.lg, paddingTop: spacing.md },
-  title: { ...typography.h1, color: colors.text, marginBottom: spacing.md },
+  title: { ...typography.h1, color: colors.textPrimary, marginBottom: spacing.md },
   tabRow: { flexDirection: "row", marginBottom: spacing.sm },
   list: { paddingHorizontal: spacing.lg, paddingBottom: spacing.xl },
 });

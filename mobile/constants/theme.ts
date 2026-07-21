@@ -1,8 +1,7 @@
 // Shishi design system.
 // Brand direction: pink + red + white — warm, modern, a little celebratory (candles, the table).
-// Tokens are semantic-first. Legacy keys (primary/background/text/…) are kept as aliases so every
-// existing screen re-skins to the new palette for free; new/updated code should prefer the
-// semantic roles (brand/bg/textPrimary/…).
+// Tokens are semantic-first (brand/bg/textPrimary/…) — every screen has been swept onto these; don't
+// reintroduce the old primary/background/text/textMuted/accent aliases.
 
 // --- Font families ---------------------------------------------------------
 // Loaded in app/_layout.tsx via useFonts. Frank Ruhl Libre (serif, strong Hebrew heritage) carries
@@ -21,21 +20,13 @@ export const fonts = {
 
 // --- Color -----------------------------------------------------------------
 export const colors = {
-  // Legacy aliases (do not remove while older screens still reference them).
-  background: "#FFF7F9",
   surface: "#FFFFFF",
-  primary: "#E11D48",
-  primaryDark: "#9F1239",
-  accent: "#FF4D8D",
-  text: "#241419",
-  textMuted: "#8A6B73",
   border: "#F3DCE3",
   success: "#15803D",
   danger: "#DC2626",
   disabled: "#E7D3D9",
   overlay: "rgba(36, 20, 25, 0.55)",
 
-  // Semantic roles (prefer these going forward).
   bg: "#FFF7F9", // app background — a barely-there pink white
   surfaceElevated: "#FFFFFF",
   surfaceMuted: "#FFF0F4", // subtle pink fill for inset rows / disabled fields

@@ -60,6 +60,6 @@ const styles = StyleSheet.create({
   },
   placeholderText: {
     ...typography.caption,
-    color: colors.textMuted,
+    color: colors.textSecondary,
   },
 });

@@ -36,7 +36,6 @@ const ROLE_OPTIONS: {
     title: "Sponsor a Shabbat",
     description: "Fund dinners for people who need a table.",
     icon: "heart-outline",
-    badge: "Coming soon",
   },
 ];
 

@@ -3,12 +3,31 @@ import { StyleSheet, Text, View } from "react-native";
 import { router } from "expo-router";
 import { Screen } from "@/components/ui/Screen";
 import { Button } from "@/components/ui/Button";
+import { DesktopLanding } from "@/components/landing/DesktopLanding";
 import { colors, spacing, typography } from "@/constants/theme";
 import { useAuth } from "@/context/AuthContext";
 import { isSupabaseConfigured } from "@/lib/env";
+import { useResponsive } from "@/lib/responsive";
 
 export default function Welcome() {
   const { continueAsDemoUser } = useAuth();
+  const { isDesktop } = useResponsive();
+
+  function getStarted() {
+    router.push("/(auth)/phone");
+  }
+  function demo() {
+    continueAsDemoUser();
+    router.replace("/(tabs)");
+  }
+
+  if (isDesktop) {
+    return (
+      <Screen scroll={false} padded={false} fullBleed>
+        <DesktopLanding onGetStarted={getStarted} onDemo={!isSupabaseConfigured ? demo : undefined} />
+      </Screen>
+    );
+  }
 
   return (
     <Screen scroll={false}>
@@ -20,17 +39,8 @@ export default function Welcome() {
         </Text>
       </View>
       <View style={styles.actions}>
-        <Button label="Get started" onPress={() => router.push("/(auth)/phone")} />
-        {!isSupabaseConfigured && (
-          <Button
-            label="Continue as demo user"
-            variant="ghost"
-            onPress={() => {
-              continueAsDemoUser();
-              router.replace("/(tabs)");
-            }}
-          />
-        )}
+        <Button label="Get started" onPress={getStarted} />
+        {!isSupabaseConfigured && <Button label="Continue as demo user" variant="ghost" onPress={demo} />}
       </View>
     </Screen>
   );
@@ -44,17 +54,17 @@ const styles = StyleSheet.create({
   wordmark: {
     ...typography.h1,
     fontSize: 40,
-    color: colors.primary,
+    color: colors.brand,
     marginBottom: spacing.md,
   },
   tagline: {
     ...typography.h2,
-    color: colors.text,
+    color: colors.textPrimary,
     marginBottom: spacing.sm,
   },
   subtitle: {
     ...typography.body,
-    color: colors.textMuted,
+    color: colors.textSecondary,
   },
   actions: {
     paddingBottom: spacing.lg,

@@ -1,6 +1,6 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "buildCommand": "npx expo export -p web",
+  "buildCommand": "npx expo export -p web && cp -r public/. dist/ && node scripts/inject-html-meta.js",
   "outputDirectory": "dist",
   "installCommand": "npm install",
   "framework": null,

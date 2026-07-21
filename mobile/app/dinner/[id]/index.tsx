@@ -17,11 +17,13 @@ import { colors, radii, spacing, typography, elevation } from "@/constants/theme
 import { KOSHER_LEVELS } from "@/constants/options";
 import { t } from "@/lib/i18n";
 import { useResponsive } from "@/lib/responsive";
+import { isSupabaseConfigured } from "@/lib/env";
 import {
   cancelPotluckClaim,
   claimPotluckItem,
   createRsvp,
   fetchDinner,
+  fetchDinnerAddress,
   fetchMyRsvpForDinner,
   fetchPotluckItems,
   isAddressRevealed,
@@ -48,6 +50,7 @@ export default function DinnerDetail() {
   const [dinner, setDinner] = useState<Dinner | null>(null);
   const [myRsvp, setMyRsvp] = useState<{ status: string; paymentStatus: string } | null>(null);
   const [potluckItems, setPotluckItems] = useState<PotluckItem[]>([]);
+  const [revealedAddress, setRevealedAddress] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
 
@@ -72,6 +75,21 @@ export default function DinnerDetail() {
   useEffect(() => {
     load();
   }, [load]);
+
+  // exact_address isn't included in the dinner queries anymore (see DINNER_COLUMNS in lib/api.ts —
+  // the DB revokes wildcard column access to it), so the real address — for the host, or an approved
+  // attendee past the reveal window — has to come from the get_dinner_address RPC. Demo mode has no
+  // RLS to work around, so dinner.exactAddress (seeded directly on the mock object) stays authoritative there.
+  useEffect(() => {
+    if (!isSupabaseConfigured || !dinner || !profile) return;
+    const isHost = dinner.hostId === profile.id;
+    const isRevealedToAttendee = myRsvp?.status === "approved" && isAddressRevealed(dinner);
+    if (!isHost && !isRevealedToAttendee) {
+      setRevealedAddress(null);
+      return;
+    }
+    fetchDinnerAddress(dinner.id).then(setRevealedAddress).catch(() => setRevealedAddress(null));
+  }, [dinner, myRsvp, profile]);
 
   async function handleRsvp() {
     if (!dinner || !profile) return;
@@ -149,7 +167,9 @@ export default function DinnerDetail() {
 
   const kosherLabel = KOSHER_LEVELS.find((k) => k.value === dinner.kosherLevel)?.label ?? "";
   const seatsLeft = dinner.capacity - dinner.seatsTaken;
-  const addressVisible = myRsvp?.status === "approved" && isAddressRevealed(dinner);
+  const isHost = profile?.id === dinner.hostId;
+  const address = isSupabaseConfigured ? revealedAddress : dinner.exactAddress;
+  const addressVisible = isHost || (myRsvp?.status === "approved" && isAddressRevealed(dinner) && !!address);
 
   const ctaLabel =
     seatsLeft <= 0
@@ -190,7 +210,7 @@ export default function DinnerDetail() {
           <InfoRow
             icon={addressVisible ? "location-outline" : "lock-closed-outline"}
             label={t("dinner.where")}
-            value={addressVisible ? dinner.exactAddress ?? dinner.area : t("dinner.addressHidden", { area: dinner.area })}
+            value={addressVisible ? address ?? dinner.area : t("dinner.addressHidden", { area: dinner.area })}
             muted={!addressVisible}
           />
           <Divider />

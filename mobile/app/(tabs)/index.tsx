@@ -9,10 +9,12 @@ import { DinnerCardSkeleton } from "@/components/ui/Skeleton";
 import { useToast } from "@/components/ui/Toast";
 import { DinnerCard } from "@/components/DinnerCard";
 import { DinnerMap } from "@/components/DinnerMap";
+import { DiscoverDesktopLayout } from "@/components/discover/DiscoverDesktopLayout";
 import { Logo } from "@/components/brand/Logo";
 import { colors, radii, spacing, typography } from "@/constants/theme";
 import { KOSHER_LEVELS } from "@/constants/options";
 import { t } from "@/lib/i18n";
+import { useResponsive } from "@/lib/responsive";
 import { fetchDinners } from "@/lib/api";
 import type { Dinner } from "@/types";
 import type { KosherLevel } from "@/types/database";
@@ -23,6 +25,7 @@ export default function Discover() {
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState<"list" | "map">("list");
   const { show } = useToast();
+  const { isDesktop } = useResponsive();
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -43,17 +46,19 @@ export default function Discover() {
   const initialLoading = loading && dinners.length === 0;
 
   return (
-    <Screen scroll={false} padded={false}>
+    <Screen scroll={false} padded={false} fullBleed={isDesktop}>
       <View style={styles.header}>
         <View style={styles.topRow}>
           <Logo size={30} />
-          <Pressable
-            style={styles.viewToggle}
-            onPress={() => setView((v) => (v === "list" ? "map" : "list"))}
-          >
-            <Ionicons name={view === "list" ? "map" : "list"} size={15} color={colors.brand} />
-            <Text style={styles.viewToggleText}>{view === "list" ? t("discover.map") : t("discover.list")}</Text>
-          </Pressable>
+          {!isDesktop ? (
+            <Pressable
+              style={styles.viewToggle}
+              onPress={() => setView((v) => (v === "list" ? "map" : "list"))}
+            >
+              <Ionicons name={view === "list" ? "map" : "list"} size={15} color={colors.brand} />
+              <Text style={styles.viewToggleText}>{view === "list" ? t("discover.map") : t("discover.list")}</Text>
+            </Pressable>
+          ) : null}
         </View>
         <Text style={styles.greeting}>{t("discover.greeting")}</Text>
         <Text style={styles.title}>{t("discover.title")}</Text>
@@ -71,7 +76,15 @@ export default function Discover() {
         </View>
       </View>
 
-      {view === "map" ? (
+      {isDesktop ? (
+        <DiscoverDesktopLayout
+          dinners={dinners}
+          loading={loading}
+          onRefresh={load}
+          onSelect={(dinnerId) => router.push(`/dinner/${dinnerId}`)}
+          onHost={() => router.push("/dinner/create")}
+        />
+      ) : view === "map" ? (
         <DinnerMap dinners={dinners} onSelect={(dinnerId) => router.push(`/dinner/${dinnerId}`)} />
       ) : initialLoading ? (
         <View style={styles.list}>

@@ -7,8 +7,9 @@ import { Header } from "@/components/ui/Header";
 import { TextField } from "@/components/ui/TextField";
 import { Button } from "@/components/ui/Button";
 import { Chip } from "@/components/ui/Chip";
+import { Reveal } from "@/components/ui/Reveal";
 import { colors, radii, spacing, typography } from "@/constants/theme";
-import { KOSHER_LEVELS } from "@/constants/options";
+import { DINNER_TYPE_TAGS, KOSHER_LEVELS } from "@/constants/options";
 import { createDinner } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import type { ApprovalMode, KosherLevel } from "@/types/database";
@@ -34,6 +35,9 @@ export default function CreateDinner() {
   const [costPerHead, setCostPerHead] = useState("");
   const [description, setDescription] = useState("");
   const [approvalMode, setApprovalMode] = useState<ApprovalMode>("host_approves");
+  const [seekingSponsorship, setSeekingSponsorship] = useState(false);
+  const [budgetNeeded, setBudgetNeeded] = useState("");
+  const [dinnerTypeTags, setDinnerTypeTags] = useState<string[]>([]);
   const [submitting, setSubmitting] = useState(false);
 
   const canSubmit =
@@ -42,7 +46,12 @@ export default function CreateDinner() {
     kosherLevel !== null &&
     description.trim().length > 0 &&
     Number(capacity) > 0 &&
-    (isFree || Number(costPerHead) > 0);
+    (isFree || Number(costPerHead) > 0) &&
+    (!seekingSponsorship || Number(budgetNeeded) > 0);
+
+  function toggleTag(tag: string) {
+    setDinnerTypeTags((prev) => (prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]));
+  }
 
   async function handleSubmit() {
     if (!profile || !kosherLevel) return;
@@ -60,8 +69,9 @@ export default function CreateDinner() {
         isFree,
         description,
         approvalMode,
-        budgetNeeded: null,
-        seekingSponsorship: false,
+        budgetNeeded: seekingSponsorship ? Number(budgetNeeded) : null,
+        seekingSponsorship,
+        dinnerTypeTags,
       });
       router.replace("/(tabs)/my-dinners");
     } finally {
@@ -113,7 +123,7 @@ export default function CreateDinner() {
 
       <View style={styles.row}>
         <Text style={styles.label}>Free for guests</Text>
-        <Switch value={isFree} onValueChange={setIsFree} trackColor={{ true: colors.primary }} />
+        <Switch value={isFree} onValueChange={setIsFree} trackColor={{ true: colors.brand }} />
       </View>
       {!isFree && (
         <TextField
@@ -141,15 +151,38 @@ export default function CreateDinner() {
         <Chip label="I'll approve each guest" selected={approvalMode === "host_approves"} onPress={() => setApprovalMode("host_approves")} />
       </View>
 
+      <Text style={styles.label}>What kind of table is this?</Text>
+      <View style={styles.chipRow}>
+        {DINNER_TYPE_TAGS.map((tag) => (
+          <Chip key={tag} label={tag} selected={dinnerTypeTags.includes(tag)} onPress={() => toggleTag(tag)} />
+        ))}
+      </View>
+
       <View style={styles.sponsorBlock}>
         <View style={styles.row}>
           <Text style={styles.label}>Seeking sponsorship?</Text>
-          <Switch value={false} disabled trackColor={{ true: colors.primary }} />
+          <Switch
+            value={seekingSponsorship}
+            onValueChange={setSeekingSponsorship}
+            trackColor={{ true: colors.brand }}
+          />
         </View>
-        <Text style={styles.comingSoon}>
-          Coming soon — sponsors will be able to help cover this dinner's budget. For now every dinner
-          is self-funded.
+        <Text style={styles.sponsorHelp}>
+          Fund this dinner's budget with a donation from a sponsor. A dinner enters the donor feed
+          once it's reviewed and approved.
         </Text>
+        {seekingSponsorship ? (
+          <Reveal>
+            <TextField
+              label="Budget needed (₪)"
+              value={budgetNeeded}
+              onChangeText={setBudgetNeeded}
+              keyboardType="number-pad"
+              placeholder="450"
+              style={{ marginTop: spacing.sm }}
+            />
+          </Reveal>
+        ) : null}
       </View>
 
       <Button label="Publish dinner" onPress={handleSubmit} disabled={!canSubmit} loading={submitting} />
@@ -158,16 +191,16 @@ export default function CreateDinner() {
 }
 
 const styles = StyleSheet.create({
-  label: { ...typography.bodyBold, color: colors.text, marginBottom: spacing.sm, marginTop: spacing.sm },
+  label: { ...typography.bodyBold, color: colors.textPrimary, marginBottom: spacing.sm, marginTop: spacing.sm },
   chipRow: { flexDirection: "row", flexWrap: "wrap", marginBottom: spacing.md },
   row: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: spacing.sm },
   sponsorBlock: {
-    backgroundColor: colors.surface,
+    backgroundColor: colors.surfaceElevated,
     borderWidth: 1,
     borderColor: colors.border,
     borderRadius: radii.md,
     padding: spacing.md,
     marginBottom: spacing.lg,
   },
-  comingSoon: { ...typography.caption, color: colors.textMuted },
+  sponsorHelp: { ...typography.caption, color: colors.textSecondary },
 });

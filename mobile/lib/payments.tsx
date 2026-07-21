@@ -1,3 +1,4 @@
+import type React from "react";
 import { useStripe } from "@stripe/stripe-react-native";
 import { createPaymentIntent } from "@/lib/api";
 import { isStripeConfigured } from "@/lib/env";
@@ -32,5 +33,8 @@ export function useDinnerCheckout() {
     }
   }
 
-  return { pay };
+  // Native has no in-flow modal — PaymentSheet is itself a native overlay, presented imperatively
+  // above. `modal` exists only so callers share one `{ pay, modal }` contract across platforms
+  // (web needs somewhere to mount its Stripe Elements form).
+  return { pay, modal: null as React.ReactNode };
 }

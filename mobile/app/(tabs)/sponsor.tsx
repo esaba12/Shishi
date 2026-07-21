@@ -1,45 +1,38 @@
-import React from "react";
-import { StyleSheet, Text, View } from "react-native";
+import React, { useCallback, useEffect, useState } from "react";
+import { FlatList, StyleSheet, Text, View } from "react-native";
+import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { Screen } from "@/components/ui/Screen";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { DinnerCardSkeleton } from "@/components/ui/Skeleton";
+import { Button } from "@/components/ui/Button";
+import { Reveal } from "@/components/ui/Reveal";
+import { useToast } from "@/components/ui/Toast";
+import { SponsorDinnerCard } from "@/components/SponsorDinnerCard";
 import { colors, radii, spacing, typography } from "@/constants/theme";
 import { MISSION_STATS } from "@/constants/options";
+import { fetchSponsorFeed } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
+import type { Dinner } from "@/types";
 
-export default function Sponsor() {
-  const { profile, sponsorDetails } = useAuth();
-  const isWaitlisted = profile?.roles.includes("sponsor");
-
+function NonSponsorUpsell() {
   return (
     <Screen>
       <View style={styles.iconWrap}>
-        <Ionicons name="heart" size={32} color={colors.primary} />
+        <Ionicons name="heart" size={32} color={colors.brand} />
       </View>
-      <Text style={styles.title}>Sponsorship is launching soon</Text>
+      <Text style={styles.title}>Fund a real Shabbat table</Text>
       <Text style={styles.subtitle}>
-        Soon you'll be able to fund a real Shabbat table — see who you fed, get photos from the
-        dinner, and hear directly from the people you helped.
+        Browse hosts who need help covering their dinner's budget, fund the ones that speak to you,
+        and see the dinner actually happen.
       </Text>
-
-      {isWaitlisted ? (
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>You're on the list</Text>
-          <Text style={styles.cardBody}>
-            {sponsorDetails?.whyIGive
-              ? `"${sponsorDetails.whyIGive}"`
-              : "We'll notify you the moment the donor feed opens."}
-          </Text>
-        </View>
-      ) : (
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>Want in?</Text>
-          <Text style={styles.cardBody}>
-            Add "Sponsor a Shabbat" from your profile settings to join the waitlist and set your
-            giving preferences now.
-          </Text>
-        </View>
-      )}
-
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>Want in?</Text>
+        <Text style={styles.cardBody}>
+          Sign up (or create a new account) and pick "Sponsor" during setup to set your giving
+          preferences and open the donor feed.
+        </Text>
+      </View>
       <Text style={styles.statsHeading}>Why this matters</Text>
       {MISSION_STATS.map((stat) => (
         <View key={stat.value} style={styles.statRow}>
@@ -51,18 +44,101 @@ export default function Sponsor() {
   );
 }
 
+function DonorFeed() {
+  const { sponsorDetails } = useAuth();
+  const { show } = useToast();
+  const [dinners, setDinners] = useState<Dinner[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      const result = await fetchSponsorFeed({
+        budgetCeiling: sponsorDetails?.budgetCeiling ?? null,
+        locationPref: sponsorDetails?.locationPref ?? null,
+        dinnerTypePrefs: sponsorDetails?.dinnerTypePrefs ?? [],
+      });
+      setDinners(result);
+    } catch {
+      show("Couldn't load the donor feed. Pull to try again.", "error");
+    } finally {
+      setLoading(false);
+    }
+  }, [sponsorDetails, show]);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  const initialLoading = loading && dinners.length === 0;
+
+  return (
+    <Screen scroll={false} padded={false}>
+      <View style={styles.feedHeader}>
+        <Text style={styles.greeting}>DONOR FEED</Text>
+        <Text style={styles.title}>Fund a table</Text>
+        <Text style={styles.subtitle}>
+          Dinners matched to your giving preferences — every one already reviewed and approved.
+        </Text>
+        <Button
+          label="My donations"
+          variant="secondary"
+          size="sm"
+          onPress={() => router.push("/sponsor/my-donations")}
+          style={styles.myDonationsBtn}
+        />
+      </View>
+
+      {initialLoading ? (
+        <View style={styles.list}>
+          {[0, 1, 2].map((i) => (
+            <DinnerCardSkeleton key={i} />
+          ))}
+        </View>
+      ) : (
+        <FlatList
+          data={dinners}
+          keyExtractor={(item) => item.id}
+          contentContainerStyle={styles.list}
+          refreshing={loading}
+          onRefresh={load}
+          showsVerticalScrollIndicator={false}
+          renderItem={({ item, index }) => (
+            <Reveal delay={Math.min(index, 5) * 60}>
+              <SponsorDinnerCard dinner={item} onPress={() => router.push(`/dinner/${item.id}/donate`)} />
+            </Reveal>
+          )}
+          ListEmptyComponent={
+            <EmptyState
+              icon="heart-outline"
+              title="No dinners match your preferences right now"
+              description="Widen your budget ceiling or location preference from your profile settings, or check back soon — new dinners open for sponsorship every week."
+            />
+          }
+        />
+      )}
+    </Screen>
+  );
+}
+
+export default function Sponsor() {
+  const { profile } = useAuth();
+  const isSponsor = profile?.roles.includes("sponsor");
+  return isSponsor ? <DonorFeed /> : <NonSponsorUpsell />;
+}
+
 const styles = StyleSheet.create({
   iconWrap: {
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: "#FBEDE5",
+    backgroundColor: colors.brandSoft,
     alignItems: "center",
     justifyContent: "center",
     marginBottom: spacing.md,
   },
-  title: { ...typography.h2, color: colors.text, marginBottom: spacing.sm },
-  subtitle: { ...typography.body, color: colors.textMuted, marginBottom: spacing.lg },
+  title: { ...typography.h1, color: colors.textPrimary, marginTop: 2, marginBottom: spacing.sm },
+  subtitle: { ...typography.body, color: colors.textSecondary, marginBottom: spacing.lg },
   card: {
     backgroundColor: colors.surface,
     borderWidth: 1,
@@ -71,10 +147,14 @@ const styles = StyleSheet.create({
     padding: spacing.md,
     marginBottom: spacing.xl,
   },
-  cardTitle: { ...typography.bodyBold, color: colors.text, marginBottom: spacing.xs },
-  cardBody: { ...typography.body, color: colors.textMuted },
-  statsHeading: { ...typography.h3, color: colors.text, marginBottom: spacing.md },
+  cardTitle: { ...typography.bodyBold, color: colors.textPrimary, marginBottom: spacing.xs },
+  cardBody: { ...typography.body, color: colors.textSecondary },
+  statsHeading: { ...typography.h3, color: colors.textPrimary, marginBottom: spacing.md },
   statRow: { flexDirection: "row", alignItems: "baseline", marginBottom: spacing.md, gap: spacing.sm },
-  statValue: { ...typography.h2, color: colors.primary, width: 90 },
-  statLabel: { ...typography.body, color: colors.textMuted, flex: 1 },
+  statValue: { ...typography.h2, color: colors.brand, width: 90 },
+  statLabel: { ...typography.body, color: colors.textSecondary, flex: 1 },
+  feedHeader: { paddingHorizontal: spacing.lg, paddingTop: spacing.sm },
+  greeting: { ...typography.label, color: colors.brand, textTransform: "uppercase" },
+  myDonationsBtn: { alignSelf: "flex-start", marginBottom: spacing.md },
+  list: { paddingHorizontal: spacing.lg, paddingBottom: spacing.xl, paddingTop: spacing.xs },
 });

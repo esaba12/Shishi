@@ -9,12 +9,17 @@ interface ScreenProps {
   scroll?: boolean;
   style?: ViewStyle;
   padded?: boolean;
+  /** Skip the maxWidth cap entirely — for screens that build their own wide desktop layout (e.g. a
+   *  list+map split) rather than a single reading-width column. */
+  fullBleed?: boolean;
 }
 
-export function Screen({ children, scroll = true, style, padded = true }: ScreenProps) {
+export function Screen({ children, scroll = true, style, padded = true, fullBleed = false }: ScreenProps) {
   const { contentMaxWidth } = useResponsive();
   // Cap + center content so mobile-first screens read as intentional on desktop web.
-  const centered: ViewStyle = { width: "100%", maxWidth: contentMaxWidth, alignSelf: "center" };
+  const centered: ViewStyle = fullBleed
+    ? { width: "100%", flex: 1 }
+    : { width: "100%", maxWidth: contentMaxWidth, alignSelf: "center" };
 
   const content = (
     <View style={[!scroll && styles.fill, centered, padded && styles.padded, style]}>{children}</View>
@@ -45,7 +50,7 @@ export function Screen({ children, scroll = true, style, padded = true }: Screen
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: colors.bg,
   },
   flex: {
     flex: 1,

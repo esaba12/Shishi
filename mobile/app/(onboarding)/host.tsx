@@ -55,6 +55,6 @@ export default function HostOnboarding() {
 }
 
 const styles = StyleSheet.create({
-  title: { ...typography.h2, color: colors.text, marginBottom: spacing.xs },
-  subtitle: { ...typography.body, color: colors.textMuted, marginBottom: spacing.lg },
+  title: { ...typography.h2, color: colors.textPrimary, marginBottom: spacing.xs },
+  subtitle: { ...typography.body, color: colors.textSecondary, marginBottom: spacing.lg },
 });

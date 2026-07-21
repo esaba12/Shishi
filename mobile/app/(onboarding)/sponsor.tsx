@@ -47,8 +47,8 @@ export default function SponsorOnboarding() {
         <StepProgress step={onboardingStepIndex("sponsor", draft.roles)} total={onboardingStepCount(draft.roles)} />
         <View style={styles.banner}>
           <Text style={styles.bannerText}>
-            Sponsorship is launching soon. We're collecting your preferences now so you're first in
-            line when the donor feed opens — no giving happens yet.
+            These preferences shape your donor feed — dinners that fit your budget and interests show
+            up first. You can fund a dinner as soon as you finish setting up.
           </Text>
         </View>
         <Text style={styles.title}>Your giving preferences</Text>
@@ -100,8 +100,8 @@ const styles = StyleSheet.create({
     padding: spacing.md,
     marginBottom: spacing.lg,
   },
-  bannerText: { ...typography.caption, color: colors.primaryDark },
-  title: { ...typography.h2, color: colors.text, marginBottom: spacing.lg },
-  label: { ...typography.bodyBold, color: colors.text, marginBottom: spacing.sm },
+  bannerText: { ...typography.caption, color: colors.brandDark },
+  title: { ...typography.h2, color: colors.textPrimary, marginBottom: spacing.lg },
+  label: { ...typography.bodyBold, color: colors.textPrimary, marginBottom: spacing.sm },
   chipRow: { flexDirection: "row", flexWrap: "wrap", marginBottom: spacing.md },
 });

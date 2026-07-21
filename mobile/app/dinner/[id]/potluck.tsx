@@ -230,7 +230,7 @@ function ItemRow({ item, onDelete }: { item: PotluckItem; onDelete: () => void }
 }
 
 const styles = StyleSheet.create({
-  hint: { ...typography.caption, color: colors.accent, marginBottom: spacing.md },
+  hint: { ...typography.caption, color: colors.brand, marginBottom: spacing.md },
   intro: { ...typography.body, color: colors.textSecondary, marginBottom: spacing.md },
   addBtn: { marginBottom: spacing.lg },
   formCard: { marginBottom: spacing.lg },

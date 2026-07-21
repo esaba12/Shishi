@@ -29,7 +29,7 @@ export default function Checkout() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { profile } = useAuth();
   const { show } = useToast();
-  const { pay } = useDinnerCheckout();
+  const { pay, modal } = useDinnerCheckout();
   const [dinner, setDinner] = useState<Dinner | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -101,6 +101,7 @@ export default function Checkout() {
       ) : null}
 
       <Button label={t("checkout.pay", { amount: dinner.costPerHead })} onPress={handlePay} loading={loading} size="lg" />
+      {modal}
     </Screen>
   );
 }

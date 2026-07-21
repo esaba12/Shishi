@@ -109,7 +109,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         monthlyBudget: input.sponsorDetails?.monthlyBudget ?? null,
         locationPref: input.sponsorDetails?.locationPref ?? null,
         dinnerTypePrefs: input.sponsorDetails?.dinnerTypePrefs ?? [],
-        status: "waitlisted",
+        // The sponsor pillar is live (donor feed + donation flow), not a waitlist, so onboarding
+        // activates a sponsor immediately. The schema column still defaults to 'waitlisted' for
+        // safety on any row inserted outside this path.
+        status: "active",
       });
     }
 
@@ -145,6 +148,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           monthly_budget: input.sponsorDetails?.monthlyBudget ?? null,
           location_pref: input.sponsorDetails?.locationPref ?? null,
           dinner_type_prefs: input.sponsorDetails?.dinnerTypePrefs ?? [],
+          status: "active",
         });
       }
     }

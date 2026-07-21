@@ -71,5 +71,5 @@ export default function Report() {
 }
 
 const styles = StyleSheet.create({
-  body: { ...typography.body, color: colors.textMuted, marginBottom: spacing.lg },
+  body: { ...typography.body, color: colors.textSecondary, marginBottom: spacing.lg },
 });

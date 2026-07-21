@@ -50,8 +50,8 @@ export default function VerifyOtp() {
 }
 
 const styles = StyleSheet.create({
-  title: { ...typography.h2, color: colors.text, marginBottom: spacing.xs },
-  subtitle: { ...typography.body, color: colors.textMuted, marginBottom: spacing.sm },
-  hint: { ...typography.caption, color: colors.accent, marginBottom: spacing.md },
+  title: { ...typography.h2, color: colors.textPrimary, marginBottom: spacing.xs },
+  subtitle: { ...typography.body, color: colors.textSecondary, marginBottom: spacing.sm },
+  hint: { ...typography.caption, color: colors.brand, marginBottom: spacing.md },
   error: { color: colors.danger, marginBottom: spacing.md },
 });

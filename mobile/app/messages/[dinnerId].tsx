@@ -7,11 +7,15 @@ import { TextField } from "@/components/ui/TextField";
 import { Button } from "@/components/ui/Button";
 import { colors, radii, spacing, typography } from "@/constants/theme";
 import { fetchDinner, fetchMessages, sendMessage } from "@/lib/api";
+import { subscribeToDinnerMessages } from "@/lib/realtime";
 import { useAuth } from "@/context/AuthContext";
 import type { ChatMessage, Dinner } from "@/types";
 
 export default function Thread() {
-  const { dinnerId } = useLocalSearchParams<{ dinnerId: string }>();
+  // `with` identifies the counterpart (the other side of this specific conversation) — a dinner can
+  // host several independent threads (multiple approved attendees, or a host and a sponsor), so
+  // dinnerId alone no longer identifies which one this screen is showing (see lib/threadKey.ts).
+  const { dinnerId, with: counterpartId } = useLocalSearchParams<{ dinnerId: string; with: string }>();
   const { profile } = useAuth();
   const [dinner, setDinner] = useState<Dinner | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -19,21 +23,27 @@ export default function Thread() {
   const [sending, setSending] = useState(false);
 
   const load = useCallback(async () => {
-    const [d, msgs] = await Promise.all([fetchDinner(dinnerId), fetchMessages(dinnerId)]);
+    const [d, msgs] = await Promise.all([fetchDinner(dinnerId), fetchMessages(dinnerId, counterpartId)]);
     setDinner(d);
     setMessages(msgs);
-  }, [dinnerId]);
+  }, [dinnerId, counterpartId]);
 
   useEffect(() => {
     load();
   }, [load]);
 
+  useEffect(() => {
+    const unsubscribe = subscribeToDinnerMessages(dinnerId, counterpartId, (message) => {
+      setMessages((prev) => (prev.some((m) => m.id === message.id) ? prev : [...prev, message]));
+    });
+    return unsubscribe;
+  }, [dinnerId, counterpartId]);
+
   async function handleSend() {
-    if (!body.trim() || !profile || !dinner) return;
+    if (!body.trim() || !profile) return;
     setSending(true);
     try {
-      const recipientId = dinner.hostId === profile.id ? "attendee" : dinner.hostId;
-      await sendMessage(dinnerId, profile.id, recipientId, body.trim());
+      await sendMessage(dinnerId, profile.id, counterpartId, body.trim());
       setBody("");
       await load();
     } finally {
@@ -83,9 +93,9 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm,
   },
   bubbleTheirs: { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border },
-  bubbleMine: { backgroundColor: colors.primary },
-  bubbleText: { ...typography.body, color: colors.text },
-  bubbleTextMine: { color: "#fff" },
+  bubbleMine: { backgroundColor: colors.brand },
+  bubbleText: { ...typography.body, color: colors.textPrimary },
+  bubbleTextMine: { color: colors.onBrand },
   composer: {
     flexDirection: "row",
     alignItems: "center",

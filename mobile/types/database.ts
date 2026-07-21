@@ -13,6 +13,7 @@ export type SponsorStatus = "waitlisted" | "active";
 export type ReportTargetType = "profile" | "dinner";
 export type ReportStatus = "open" | "reviewed" | "actioned";
 export type PotluckCategory = "food" | "drink" | "supplies" | "money" | "other";
+export type DonationStatus = "pending" | "succeeded" | "failed" | "refunded";
 
 export interface Database {
   public: {
@@ -86,6 +87,9 @@ export interface Database {
           approval_mode: ApprovalMode;
           budget_needed: number | null;
           seeking_sponsorship: boolean;
+          dinner_type_tags: string[];
+          sponsor_approved: boolean;
+          amount_funded: number;
           status: DinnerStatus;
           created_at: string;
         };
@@ -99,6 +103,32 @@ export interface Database {
           description: string;
         };
         Update: Partial<Database["public"]["Tables"]["dinners"]["Row"]>;
+      };
+      sponsor_donations: {
+        Row: {
+          id: string;
+          dinner_id: string;
+          host_id: string;
+          sponsor_id: string;
+          donor_legal_name: string;
+          donor_receipt_email: string;
+          amount: number;
+          currency: string;
+          status: DonationStatus;
+          stripe_payment_id: string | null;
+          message: string | null;
+          anonymous: boolean;
+          created_at: string;
+        };
+        Insert: Partial<Database["public"]["Tables"]["sponsor_donations"]["Row"]> & {
+          dinner_id: string;
+          host_id: string;
+          sponsor_id: string;
+          donor_legal_name: string;
+          donor_receipt_email: string;
+          amount: number;
+        };
+        Update: Partial<Database["public"]["Tables"]["sponsor_donations"]["Row"]>;
       };
       rsvps: {
         Row: {

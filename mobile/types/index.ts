@@ -1,6 +1,7 @@
 import type {
   ApprovalMode,
   DinnerStatus,
+  DonationStatus,
   KosherLevel,
   PaymentStatus,
   PotluckCategory,
@@ -61,7 +62,25 @@ export interface Dinner {
   approvalMode: ApprovalMode;
   budgetNeeded: number | null;
   seekingSponsorship: boolean;
+  dinnerTypeTags: string[];
+  sponsorApproved: boolean;
+  amountFunded: number;
   status: DinnerStatus;
+}
+
+export interface SponsorDonation {
+  id: string;
+  dinnerId: string;
+  hostId: string;
+  sponsorId: string;
+  donorLegalName: string;
+  donorReceiptEmail: string;
+  amount: number;
+  currency: string;
+  status: DonationStatus;
+  message: string | null;
+  anonymous: boolean;
+  createdAt: string;
 }
 
 export interface PotluckClaim {
@@ -101,6 +120,7 @@ export interface MessageThread {
   id: string;
   dinnerId: string;
   dinnerTitle: string;
+  counterpartId: string;
   counterpartName: string;
   counterpartPhotoUrl: string | null;
   lastMessage: string;

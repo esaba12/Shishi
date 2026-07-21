@@ -105,8 +105,8 @@ export default function AttendeeOnboarding() {
 }
 
 const styles = StyleSheet.create({
-  title: { ...typography.h2, color: colors.text, marginBottom: spacing.xs },
-  subtitle: { ...typography.body, color: colors.textMuted, marginBottom: spacing.lg },
-  label: { ...typography.bodyBold, color: colors.text, marginBottom: spacing.sm },
+  title: { ...typography.h2, color: colors.textPrimary, marginBottom: spacing.xs },
+  subtitle: { ...typography.body, color: colors.textSecondary, marginBottom: spacing.lg },
+  label: { ...typography.bodyBold, color: colors.textPrimary, marginBottom: spacing.sm },
   chipRow: { flexDirection: "row", flexWrap: "wrap", marginBottom: spacing.md },
 });

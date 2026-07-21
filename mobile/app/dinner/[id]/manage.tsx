@@ -90,8 +90,8 @@ export default function ManageDinner() {
 }
 
 const styles = StyleSheet.create({
-  hint: { ...typography.caption, color: colors.accent, marginBottom: spacing.md },
-  sectionTitle: { ...typography.h3, color: colors.text, marginTop: spacing.lg, marginBottom: spacing.sm },
+  hint: { ...typography.caption, color: colors.brand, marginBottom: spacing.md },
+  sectionTitle: { ...typography.h3, color: colors.textPrimary, marginTop: spacing.lg, marginBottom: spacing.sm },
   row: {
     backgroundColor: colors.surface,
     borderWidth: 1,
@@ -100,7 +100,7 @@ const styles = StyleSheet.create({
     padding: spacing.md,
     marginBottom: spacing.sm,
   },
-  name: { ...typography.bodyBold, color: colors.text, marginBottom: spacing.sm },
+  name: { ...typography.bodyBold, color: colors.textPrimary, marginBottom: spacing.sm },
   actions: { flexDirection: "row", gap: spacing.sm },
   actionBtn: { flex: 1 },
   confirmedRow: {
@@ -110,5 +110,5 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
   },
-  paid: { ...typography.caption, color: colors.textMuted },
+  paid: { ...typography.caption, color: colors.textSecondary },
 });
