@@ -2,7 +2,14 @@ import React from "react";
 import type { PropsWithChildren } from "react";
 import { ScrollViewStyleReset } from "expo-router/html";
 
-// Web-only document shell (used when expo-router renders the HTML on web). Native ignores this file.
+// Web-only document shell. Native ignores this file.
+//
+// NOTE: with app.json's web.output set to "single" (SPA export), expo export does NOT render this
+// template into the exported index.html — it only applies under web.output: "static". Verified by
+// inspecting a real `expo export -p web` output. The app.json `web` block (name/description/
+// themeColor) still lands in the default shell either way, which is why those meta tags are
+// reliable but anything added only here (title, extra <link>/<style> tags) currently is not. If we
+// switch to "static" output later, this file becomes fully effective as written.
 export default function Root({ children }: PropsWithChildren) {
   return (
     <html lang="en">
@@ -27,6 +34,4 @@ html, body, #root { height: 100%; }
 body { background-color: #FFF7F9; overflow-x: hidden; }
 #root { display: flex; flex-direction: column; }
 * { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
-/* Leaflet tiles must sit under the app's fixed chrome (sidebar/tab bar). */
-.leaflet-container { z-index: 0; }
 `;
