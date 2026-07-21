@@ -13,7 +13,7 @@ const ROLE_LABELS: Record<string, string> = {
 };
 
 export default function Profile() {
-  const { profile, hostDetails, signOut } = useAuth();
+  const { profile, hostDetails, sponsorDetails, signOut } = useAuth();
 
   if (!profile) return null;
 
@@ -42,6 +42,15 @@ export default function Profile() {
           <Text style={styles.cardTitle}>Hosting</Text>
           <Text style={styles.cardBody}>{hostDetails.bio || "No bio yet."}</Text>
           <Text style={styles.stat}>Hosted {hostDetails.dinnersHostedCount} Shabbats</Text>
+        </View>
+      )}
+
+      {profile.roles.includes("sponsor") && sponsorDetails && (
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>Sponsoring</Text>
+          <Text style={styles.cardBody}>{sponsorDetails.whyIGive || "No reason given yet."}</Text>
+          <InfoLine label="Budget ceiling" value={sponsorDetails.budgetCeiling != null ? `₪${sponsorDetails.budgetCeiling}` : "—"} />
+          <InfoLine label="Location" value={sponsorDetails.locationPref ?? "Anywhere"} />
         </View>
       )}
 
