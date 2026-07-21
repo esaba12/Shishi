@@ -2,7 +2,6 @@ import React from "react";
 import { StyleSheet, Text, View, ViewStyle } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { colors, radii, spacing, typography } from "@/constants/theme";
-import { useDemoTheme } from "@/context/DemoThemeContext";
 
 type Tone = "neutral" | "brand" | "success" | "danger" | "accent";
 
@@ -16,12 +15,7 @@ interface BadgeProps {
 /** Small pill for status/metadata (kosher level, price, seats-left urgency). Tokenized replacement
  *  for the inline tag styles that were scattered across DinnerCard. */
 export function Badge({ label, tone = "neutral", icon, style }: BadgeProps) {
-  const { theme } = useDemoTheme();
-  const palette = tone === "accent"
-    ? { bg: theme.accentSoft, fg: theme.brand }
-    : tone === "brand"
-      ? { bg: theme.brandSoft, fg: theme.brandDark }
-      : tones[tone];
+  const palette = tones[tone];
   return (
     <View style={[styles.badge, { backgroundColor: palette.bg }, style]}>
       {icon ? <Ionicons name={icon} size={12} color={palette.fg} style={styles.icon} /> : null}

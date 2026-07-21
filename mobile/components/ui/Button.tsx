@@ -2,7 +2,6 @@ import React, { useRef } from "react";
 import { ActivityIndicator, Animated, Pressable, StyleSheet, Text, ViewStyle } from "react-native";
 import { haptics } from "@/lib/haptics";
 import { colors, radii, spacing, typography } from "@/constants/theme";
-import { useDemoTheme } from "@/context/DemoThemeContext";
 
 type Variant = "primary" | "secondary" | "ghost" | "danger";
 type Size = "sm" | "md" | "lg";
@@ -29,7 +28,6 @@ export function Button({
   haptic = true,
   style,
 }: ButtonProps) {
-  const { theme } = useDemoTheme();
   const isDisabled = disabled || loading;
   const scale = useRef(new Animated.Value(1)).current;
 
@@ -48,29 +46,16 @@ export function Button({
         onPressIn={() => !isDisabled && spring(0.97)}
         onPressOut={() => spring(1)}
         disabled={isDisabled}
-        style={[styles.base, sizeStyles[size], variantStyles[variant], dynamicVariantStyles(variant, theme), isDisabled && styles.disabled, style]}
+        style={[styles.base, sizeStyles[size], variantStyles[variant], isDisabled && styles.disabled, style]}
       >
         {loading ? (
-          <ActivityIndicator color={variant === "primary" || variant === "danger" ? theme.onBrand : theme.brand} />
+          <ActivityIndicator color={variant === "primary" || variant === "danger" ? colors.onBrand : colors.brand} />
         ) : (
-          <Text style={[styles.label, sizeTextStyles[size], textVariantStyles[variant], { color: textVariantColor(variant, theme) }]}>{label}</Text>
+          <Text style={[styles.label, sizeTextStyles[size], textVariantStyles[variant]]}>{label}</Text>
         )}
       </Pressable>
     </Animated.View>
   );
-}
-
-function dynamicVariantStyles(variant: Variant, theme: { brand: string }) : ViewStyle {
-  if (variant === "primary") return { backgroundColor: theme.brand };
-  if (variant === "secondary") return { backgroundColor: colors.surface, borderColor: colors.border };
-  if (variant === "danger") return { backgroundColor: colors.danger };
-  return { backgroundColor: "transparent" };
-}
-
-function textVariantColor(variant: Variant, theme: { brand: string; onBrand: string }) {
-  if (variant === "primary" || variant === "danger") return theme.onBrand;
-  if (variant === "ghost") return theme.brand;
-  return colors.textPrimary;
 }
 
 const styles = StyleSheet.create({
