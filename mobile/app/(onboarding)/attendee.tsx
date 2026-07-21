@@ -5,9 +5,12 @@ import { Screen } from "@/components/ui/Screen";
 import { TextField } from "@/components/ui/TextField";
 import { Button } from "@/components/ui/Button";
 import { Chip } from "@/components/ui/Chip";
+import { StepProgress } from "@/components/ui/StepProgress";
+import { Reveal } from "@/components/ui/Reveal";
 import { PhotoPicker } from "@/components/PhotoPicker";
 import { colors, spacing, typography } from "@/constants/theme";
 import { KOSHER_LEVELS, INTEREST_TAGS } from "@/constants/options";
+import { onboardingStepCount, onboardingStepIndex } from "@/lib/onboardingSteps";
 import { useOnboarding } from "@/context/OnboardingContext";
 import type { KosherLevel } from "@/types/database";
 
@@ -52,8 +55,11 @@ export default function AttendeeOnboarding() {
 
   return (
     <Screen>
-      <Text style={styles.title}>Tell us about you</Text>
-      <Text style={styles.subtitle}>Just the essentials \u2014 this is what helps us find your table.</Text>
+      <Reveal>
+        <StepProgress step={onboardingStepIndex("attendee", draft.roles)} total={onboardingStepCount(draft.roles)} />
+        <Text style={styles.title}>Tell us about you</Text>
+        <Text style={styles.subtitle}>Just the essentials — this is what helps us find your table.</Text>
+      </Reveal>
       <PhotoPicker uri={photoUrl} onChange={setPhotoUrl} />
       <TextField label="Name" value={name} onChangeText={setName} placeholder="Your name" />
       <TextField label="Age" value={age} onChangeText={setAge} keyboardType="number-pad" placeholder="26" />
@@ -93,7 +99,7 @@ export default function AttendeeOnboarding() {
         placeholder="I once hiked the entire Israel Trail."
       />
 
-      <Button label="Continue" onPress={handleContinue} disabled={!canContinue} />
+      <Button label="Continue" onPress={handleContinue} disabled={!canContinue} size="lg" />
     </Screen>
   );
 }

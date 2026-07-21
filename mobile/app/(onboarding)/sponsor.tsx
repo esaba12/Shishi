@@ -5,8 +5,11 @@ import { Screen } from "@/components/ui/Screen";
 import { TextField } from "@/components/ui/TextField";
 import { Button } from "@/components/ui/Button";
 import { Chip } from "@/components/ui/Chip";
+import { StepProgress } from "@/components/ui/StepProgress";
+import { Reveal } from "@/components/ui/Reveal";
 import { colors, radii, spacing, typography } from "@/constants/theme";
 import { DINNER_TYPE_TAGS } from "@/constants/options";
+import { onboardingStepCount, onboardingStepIndex } from "@/lib/onboardingSteps";
 import { useOnboarding } from "@/context/OnboardingContext";
 
 export default function SponsorOnboarding() {
@@ -40,13 +43,16 @@ export default function SponsorOnboarding() {
 
   return (
     <Screen>
-      <View style={styles.banner}>
-        <Text style={styles.bannerText}>
-          Sponsorship is launching soon. We're collecting your preferences now so you're first in
-          line when the donor feed opens \u2014 no giving happens yet.
-        </Text>
-      </View>
-      <Text style={styles.title}>Your giving preferences</Text>
+      <Reveal>
+        <StepProgress step={onboardingStepIndex("sponsor", draft.roles)} total={onboardingStepCount(draft.roles)} />
+        <View style={styles.banner}>
+          <Text style={styles.bannerText}>
+            Sponsorship is launching soon. We're collecting your preferences now so you're first in
+            line when the donor feed opens — no giving happens yet.
+          </Text>
+        </View>
+        <Text style={styles.title}>Your giving preferences</Text>
+      </Reveal>
       <TextField
         label="Why do you give?"
         value={whyIGive}
@@ -57,14 +63,14 @@ export default function SponsorOnboarding() {
         style={{ minHeight: 70, textAlignVertical: "top" }}
       />
       <TextField
-        label="Budget ceiling per dinner (\u20aa)"
+        label="Budget ceiling per dinner (₪)"
         value={budgetCeiling}
         onChangeText={setBudgetCeiling}
         keyboardType="number-pad"
         placeholder="500"
       />
       <TextField
-        label="Monthly giving budget (\u20aa)"
+        label="Monthly giving budget (₪)"
         value={monthlyBudget}
         onChangeText={setMonthlyBudget}
         keyboardType="number-pad"
@@ -82,7 +88,7 @@ export default function SponsorOnboarding() {
           <Chip key={tag} label={tag} selected={dinnerTypePrefs.includes(tag)} onPress={() => toggleTag(tag)} />
         ))}
       </View>
-      <Button label="Continue" onPress={handleContinue} />
+      <Button label="Continue" onPress={handleContinue} size="lg" />
     </Screen>
   );
 }

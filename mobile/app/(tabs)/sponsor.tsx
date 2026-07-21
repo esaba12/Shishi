@@ -17,7 +17,7 @@ export default function Sponsor() {
       </View>
       <Text style={styles.title}>Sponsorship is launching soon</Text>
       <Text style={styles.subtitle}>
-        Soon you'll be able to fund a real Shabbat table \u2014 see who you fed, get photos from the
+        Soon you'll be able to fund a real Shabbat table — see who you fed, get photos from the
         dinner, and hear directly from the people you helped.
       </Text>
 

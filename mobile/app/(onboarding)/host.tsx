@@ -4,7 +4,10 @@ import { router } from "expo-router";
 import { Screen } from "@/components/ui/Screen";
 import { TextField } from "@/components/ui/TextField";
 import { Button } from "@/components/ui/Button";
+import { StepProgress } from "@/components/ui/StepProgress";
+import { Reveal } from "@/components/ui/Reveal";
 import { colors, spacing, typography } from "@/constants/theme";
+import { onboardingStepCount, onboardingStepIndex } from "@/lib/onboardingSteps";
 import { useOnboarding } from "@/context/OnboardingContext";
 
 export default function HostOnboarding() {
@@ -23,11 +26,14 @@ export default function HostOnboarding() {
 
   return (
     <Screen>
-      <Text style={styles.title}>Your hosting style</Text>
-      <Text style={styles.subtitle}>
-        A quick verification note: for now we verify hosts by phone + email, same as everyone else.
-        ID verification is coming in a later update.
-      </Text>
+      <Reveal>
+        <StepProgress step={onboardingStepIndex("host", draft.roles)} total={onboardingStepCount(draft.roles)} />
+        <Text style={styles.title}>Your hosting style</Text>
+        <Text style={styles.subtitle}>
+          A quick verification note: for now we verify hosts by phone + email, same as everyone else.
+          ID verification is coming in a later update.
+        </Text>
+      </Reveal>
       <TextField
         label="Hosting bio"
         value={bio}
@@ -43,7 +49,7 @@ export default function HostOnboarding() {
         onChangeText={setHomeVibe}
         placeholder="Cozy and quiet, big and musical, ..."
       />
-      <Button label="Continue" onPress={handleContinue} disabled={bio.trim().length === 0} />
+      <Button label="Continue" onPress={handleContinue} disabled={bio.trim().length === 0} size="lg" />
     </Screen>
   );
 }

@@ -117,7 +117,7 @@ export default function CreateDinner() {
       </View>
       {!isFree && (
         <TextField
-          label="Cost per head (\u20aa)"
+          label="Cost per head (₪)"
           value={costPerHead}
           onChangeText={setCostPerHead}
           keyboardType="number-pad"
@@ -147,7 +147,7 @@ export default function CreateDinner() {
           <Switch value={false} disabled trackColor={{ true: colors.primary }} />
         </View>
         <Text style={styles.comingSoon}>
-          Coming soon \u2014 sponsors will be able to help cover this dinner's budget. For now every dinner
+          Coming soon — sponsors will be able to help cover this dinner's budget. For now every dinner
           is self-funded.
         </Text>
       </View>
