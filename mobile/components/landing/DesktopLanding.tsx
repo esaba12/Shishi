@@ -4,7 +4,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import { Button } from "@/components/ui/Button";
 import { Reveal } from "@/components/ui/Reveal";
-import { LogoMark } from "@/components/brand/Logo";
+import { Logo, LogoMark } from "@/components/brand/Logo";
 import { colors, radii, spacing, typography } from "@/constants/theme";
 import type { Role } from "@/types";
 
@@ -37,7 +37,10 @@ export function DesktopLanding({
   return (
     <View style={styles.row}>
       <View style={styles.left}>
-        <Reveal>
+        <Reveal style={styles.logoRow}>
+          <Logo size={30} />
+        </Reveal>
+        <Reveal delay={30}>
           <Text style={styles.eyebrow}>SHABBAT DINNERS · TEL AVIV</Text>
         </Reveal>
         <Reveal delay={60}>
@@ -91,6 +94,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     paddingHorizontal: spacing.xl,
   },
+  logoRow: { marginBottom: spacing.xl },
   eyebrow: { ...typography.label, color: colors.brand, letterSpacing: 1.5, marginBottom: spacing.md },
   headline: { ...typography.display, fontSize: 48, lineHeight: 54, color: colors.textPrimary, marginBottom: spacing.md },
   subtitle: { ...typography.body, fontSize: 17, lineHeight: 26, color: colors.textSecondary, marginBottom: spacing.lg, maxWidth: 480 },
