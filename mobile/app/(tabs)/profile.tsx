@@ -17,6 +17,13 @@ export default function Profile() {
 
   if (!profile) return null;
 
+  // signOut() only clears auth state — it doesn't navigate. Without an explicit redirect the app
+  // just sits on this (now-profile-less) tab instead of returning to the welcome screen.
+  async function handleSignOut() {
+    await signOut();
+    router.replace("/");
+  }
+
   return (
     <Screen>
       <View style={styles.header}>
@@ -75,7 +82,7 @@ export default function Profile() {
         />
       </View>
 
-      <Button label="Sign out" variant="ghost" onPress={signOut} />
+      <Button label="Sign out" variant="ghost" onPress={handleSignOut} />
     </Screen>
   );
 }
