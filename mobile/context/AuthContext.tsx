@@ -1,10 +1,37 @@
 import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
 import { Platform } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import type { Session } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabase";
 import { isSupabaseConfigured } from "@/lib/env";
+import { fetchProfile } from "@/lib/api";
 import { mockHostDetails, mockProfile, mockSponsorDetails } from "@/data/mock";
 import type { HostDetails, Profile, Role, SponsorDetails } from "@/types";
+
+// Demo mode has no real backend session, so login/onboarding progress is cached here instead —
+// otherwise every reload of the app would drop straight back to the persona picker or account
+// creation, since the in-memory-only state would reset to signed-out.
+const DEMO_CACHE_KEY = "shishi.demoSession.v1";
+
+interface DemoCache {
+  profile: Profile | null;
+  hostDetails: HostDetails | null;
+  sponsorDetails: SponsorDetails | null;
+}
+
+async function loadDemoCache(): Promise<DemoCache | null> {
+  const raw = await AsyncStorage.getItem(DEMO_CACHE_KEY);
+  if (!raw) return null;
+  try {
+    return JSON.parse(raw) as DemoCache;
+  } catch {
+    return null;
+  }
+}
+
+async function saveDemoCache(cache: DemoCache) {
+  await AsyncStorage.setItem(DEMO_CACHE_KEY, JSON.stringify(cache));
+}
 
 interface AuthContextValue {
   isLoading: boolean;
@@ -39,17 +66,61 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [sponsorDetails, setSponsorDetails] = useState<SponsorDetails | null>(null);
   const [pendingEmail, setPendingEmail] = useState<string | null>(null);
 
+  async function loadRoleDetails(userId: string, roles: Role[]) {
+    if (roles.includes("host")) {
+      const { data } = await supabase.from("host_details").select("*").eq("profile_id", userId).maybeSingle();
+      if (data) {
+        setHostDetails({
+          bio: data.bio ?? "",
+          homeVibe: data.home_vibe ?? "",
+          dinnersHostedCount: data.dinners_hosted_count ?? 0,
+        });
+      }
+    }
+    if (roles.includes("sponsor")) {
+      const { data } = await supabase.from("sponsor_details").select("*").eq("profile_id", userId).maybeSingle();
+      if (data) {
+        setSponsorDetails({
+          whyIGive: data.why_i_give ?? "",
+          budgetCeiling: data.budget_ceiling,
+          monthlyBudget: data.monthly_budget,
+          locationPref: data.location_pref,
+          dinnerTypePrefs: data.dinner_type_prefs ?? [],
+          status: data.status,
+        });
+      }
+    }
+  }
+
   useEffect(() => {
     if (!isSupabaseConfigured) {
-      setIsLoading(false);
+      loadDemoCache().then((cache) => {
+        if (cache?.profile) {
+          setSession({ user: { id: "demo-user" } } as unknown as Session);
+          setProfile(cache.profile);
+          setHostDetails(cache.hostDetails);
+          setSponsorDetails(cache.sponsorDetails);
+        }
+        setIsLoading(false);
+      });
       return;
     }
-    supabase.auth.getSession().then(({ data }) => {
+    supabase.auth.getSession().then(async ({ data }) => {
       setSession(data.session);
+      if (data.session) {
+        const restoredProfile = await fetchProfile(data.session.user.id);
+        setProfile(restoredProfile);
+        if (restoredProfile) await loadRoleDetails(data.session.user.id, restoredProfile.roles);
+      }
       setIsLoading(false);
     });
-    const { data: sub } = supabase.auth.onAuthStateChange((_event, next) => {
+    const { data: sub } = supabase.auth.onAuthStateChange(async (_event, next) => {
       setSession(next);
+      if (next) {
+        const restoredProfile = await fetchProfile(next.user.id);
+        setProfile(restoredProfile);
+        if (restoredProfile) await loadRoleDetails(next.user.id, restoredProfile.roles);
+      }
     });
     return () => sub.subscription.unsubscribe();
   }, []);
@@ -87,10 +158,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   function continueAsDemoUser(persona: Role = "attendee") {
     const roles: Role[] = persona === "attendee" ? ["attendee"] : ["attendee", persona];
+    const nextProfile = { ...mockProfile, roles };
+    const nextHostDetails = roles.includes("host") ? mockHostDetails : null;
+    const nextSponsorDetails = roles.includes("sponsor") ? mockSponsorDetails : null;
     setSession({ user: { id: "demo-user" } } as unknown as Session);
-    setProfile({ ...mockProfile, roles });
-    setHostDetails(roles.includes("host") ? mockHostDetails : null);
-    setSponsorDetails(roles.includes("sponsor") ? mockSponsorDetails : null);
+    setProfile(nextProfile);
+    setHostDetails(nextHostDetails);
+    setSponsorDetails(nextSponsorDetails);
+    saveDemoCache({ profile: nextProfile, hostDetails: nextHostDetails, sponsorDetails: nextSponsorDetails });
   }
 
   async function completeOnboarding(input: {
@@ -114,26 +189,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       roles: input.roles,
       verificationTier: 1,
     };
+    const nextHostDetails: HostDetails | null = input.roles.includes("host")
+      ? {
+          bio: input.hostDetails?.bio ?? "",
+          homeVibe: input.hostDetails?.homeVibe ?? "",
+          dinnersHostedCount: 0,
+        }
+      : null;
+    const nextSponsorDetails: SponsorDetails | null = input.roles.includes("sponsor")
+      ? {
+          whyIGive: input.sponsorDetails?.whyIGive ?? "",
+          budgetCeiling: input.sponsorDetails?.budgetCeiling ?? null,
+          monthlyBudget: input.sponsorDetails?.monthlyBudget ?? null,
+          locationPref: input.sponsorDetails?.locationPref ?? null,
+          dinnerTypePrefs: input.sponsorDetails?.dinnerTypePrefs ?? [],
+          // The sponsor pillar is live (donor feed + donation flow), not a waitlist, so onboarding
+          // activates a sponsor immediately. The schema column still defaults to 'waitlisted' for
+          // safety on any row inserted outside this path.
+          status: "active",
+        }
+      : null;
     setProfile(nextProfile);
-    if (input.roles.includes("host")) {
-      setHostDetails({
-        bio: input.hostDetails?.bio ?? "",
-        homeVibe: input.hostDetails?.homeVibe ?? "",
-        dinnersHostedCount: 0,
-      });
-    }
-    if (input.roles.includes("sponsor")) {
-      setSponsorDetails({
-        whyIGive: input.sponsorDetails?.whyIGive ?? "",
-        budgetCeiling: input.sponsorDetails?.budgetCeiling ?? null,
-        monthlyBudget: input.sponsorDetails?.monthlyBudget ?? null,
-        locationPref: input.sponsorDetails?.locationPref ?? null,
-        dinnerTypePrefs: input.sponsorDetails?.dinnerTypePrefs ?? [],
-        // The sponsor pillar is live (donor feed + donation flow), not a waitlist, so onboarding
-        // activates a sponsor immediately. The schema column still defaults to 'waitlisted' for
-        // safety on any row inserted outside this path.
-        status: "active",
-      });
+    setHostDetails(nextHostDetails);
+    setSponsorDetails(nextSponsorDetails);
+    if (!isSupabaseConfigured) {
+      await saveDemoCache({ profile: nextProfile, hostDetails: nextHostDetails, sponsorDetails: nextSponsorDetails });
     }
 
     if (isSupabaseConfigured && session) {
@@ -176,6 +256,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   async function signOut() {
     if (isSupabaseConfigured) await supabase.auth.signOut();
+    else await AsyncStorage.removeItem(DEMO_CACHE_KEY);
     setSession(null);
     setProfile(null);
     setHostDetails(null);
