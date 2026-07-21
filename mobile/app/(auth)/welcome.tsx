@@ -15,6 +15,9 @@ export default function Welcome() {
   function getStarted(role?: Role) {
     router.push(role ? { pathname: "/(auth)/email", params: { role } } : "/(auth)/email");
   }
+  function logIn() {
+    router.push("/(auth)/login");
+  }
   function demo() {
     router.push("/(auth)/demo-role");
   }
@@ -22,7 +25,11 @@ export default function Welcome() {
   if (isDesktop) {
     return (
       <Screen scroll={false} padded={false} fullBleed>
-        <DesktopLanding onGetStarted={getStarted} onDemo={!isSupabaseConfigured ? demo : undefined} />
+        <DesktopLanding
+          onGetStarted={getStarted}
+          onLogIn={isSupabaseConfigured ? logIn : undefined}
+          onDemo={!isSupabaseConfigured ? demo : undefined}
+        />
       </Screen>
     );
   }
@@ -38,6 +45,7 @@ export default function Welcome() {
       </View>
       <View style={styles.actions}>
         <Button label="Get started" onPress={getStarted} />
+        {isSupabaseConfigured && <Button label="Log in" variant="secondary" onPress={logIn} />}
         {!isSupabaseConfigured && <Button label="Continue as demo user" variant="ghost" onPress={demo} />}
       </View>
     </Screen>

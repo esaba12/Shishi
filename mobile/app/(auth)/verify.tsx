@@ -20,7 +20,9 @@ export default function VerifyOtp() {
     setLoading(true);
     try {
       await verifyOtp(email, code);
-      router.replace("/(onboarding)/role-select");
+      // Let index.tsx decide: returning users (profile already exists) go to the main app,
+      // new users fall through to onboarding — verifyOtp resolves only once that's known.
+      router.replace("/");
     } catch (e) {
       setError(e instanceof Error ? e.message : "Invalid code, try again.");
     } finally {

@@ -41,7 +41,10 @@ interface AuthContextValue {
   hostDetails: HostDetails | null;
   sponsorDetails: SponsorDetails | null;
   pendingEmail: string | null;
-  requestOtp: (email: string) => Promise<void>;
+  /** `mode` controls whether Supabase is allowed to create a brand-new account for this email.
+   *  "signup" (default) creates one if it doesn't exist yet; "login" only sends a link to an
+   *  existing account and errors otherwise — see app/(auth)/login.tsx. */
+  requestOtp: (email: string, mode?: "signup" | "login") => Promise<void>;
   verifyOtp: (email: string, code: string) => Promise<void>;
   /** `persona` picks which demo profile to load — attendee is the baseline pillar every persona
    *  gets (Discover/RSVP), "host"/"sponsor" additionally grant that role with matching mock details
@@ -92,6 +95,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
+  // Shared by the initial session check, the auth-state listener, and verifyOtp below — all three
+  // need to go from "we have a session" to "we know whether this user has a profile yet" before
+  // any screen can safely decide between onboarding and the main app (see index.tsx's redirect).
+  async function hydrateFromSession(next: Session | null) {
+    setSession(next);
+    if (!next) {
+      setProfile(null);
+      setHostDetails(null);
+      setSponsorDetails(null);
+      return;
+    }
+    const restoredProfile = await fetchProfile(next.user.id);
+    setProfile(restoredProfile);
+    if (restoredProfile) await loadRoleDetails(next.user.id, restoredProfile.roles);
+  }
+
   useEffect(() => {
     if (!isSupabaseConfigured) {
       loadDemoCache().then((cache) => {
@@ -106,21 +125,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return;
     }
     supabase.auth.getSession().then(async ({ data }) => {
-      setSession(data.session);
-      if (data.session) {
-        const restoredProfile = await fetchProfile(data.session.user.id);
-        setProfile(restoredProfile);
-        if (restoredProfile) await loadRoleDetails(data.session.user.id, restoredProfile.roles);
-      }
+      await hydrateFromSession(data.session);
       setIsLoading(false);
     });
-    const { data: sub } = supabase.auth.onAuthStateChange(async (_event, next) => {
-      setSession(next);
-      if (next) {
-        const restoredProfile = await fetchProfile(next.user.id);
-        setProfile(restoredProfile);
-        if (restoredProfile) await loadRoleDetails(next.user.id, restoredProfile.roles);
-      }
+    const { data: sub } = supabase.auth.onAuthStateChange((_event, next) => {
+      hydrateFromSession(next);
     });
     return () => sub.subscription.unsubscribe();
   }, []);
@@ -135,12 +144,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // automatically via onAuthStateChange below — see app/(auth)/email.tsx for the "check your email"
   // state this leads to. Swap back to supabase.auth.signInWithOtp({ phone })/verifyOtp({ phone,
   // type: "sms" }) once phone is ready; nothing else in the app depends on which channel this is.
-  async function requestOtp(email: string) {
+  async function requestOtp(email: string, mode: "signup" | "login" = "signup") {
     setPendingEmail(email);
     if (!isSupabaseConfigured) return; // demo mode: verifyOtp accepts any code
     const { error } = await supabase.auth.signInWithOtp({
       email,
-      options: Platform.OS === "web" ? { emailRedirectTo: window.location.origin } : undefined,
+      options: {
+        shouldCreateUser: mode === "signup",
+        ...(Platform.OS === "web" ? { emailRedirectTo: window.location.origin } : {}),
+      },
     });
     if (error) throw error;
   }
@@ -148,12 +160,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   async function verifyOtp(email: string, code: string) {
     if (!isSupabaseConfigured) {
       // Demo mode without a Supabase project connected: any 6-digit code proceeds.
-      setSession({ user: { id: "demo-user" } } as unknown as Session);
+      await hydrateFromSession({ user: { id: "demo-user" } } as unknown as Session);
       return;
     }
     const { data, error } = await supabase.auth.verifyOtp({ email, token: code, type: "email" });
     if (error) throw error;
-    setSession(data.session);
+    await hydrateFromSession(data.session);
   }
 
   function continueAsDemoUser(persona: Role = "attendee") {
