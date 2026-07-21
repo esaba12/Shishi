@@ -27,9 +27,11 @@ const ROLE_TEASERS: {
  *  brand system (gradient + soft glow layers + the ש mark) rather than a placeholder image. */
 export function DesktopLanding({
   onGetStarted,
+  onLogIn,
   onDemo,
 }: {
   onGetStarted: (role?: Role) => void;
+  onLogIn?: () => void;
   onDemo?: () => void;
 }) {
   return (
@@ -50,6 +52,7 @@ export function DesktopLanding({
         <Reveal delay={180}>
           <View style={styles.actions}>
             <Button label="Get started" onPress={onGetStarted} size="lg" />
+            {onLogIn ? <Button label="Log in" variant="secondary" size="lg" onPress={onLogIn} /> : null}
             {onDemo ? <Button label="Continue as demo user" variant="ghost" onPress={onDemo} /> : null}
           </View>
         </Reveal>
