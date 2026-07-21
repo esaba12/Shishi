@@ -7,7 +7,6 @@ import { SelectCard } from "@/components/ui/SelectCard";
 import { Reveal } from "@/components/ui/Reveal";
 import { colors, spacing, typography } from "@/constants/theme";
 import { useAuth } from "@/context/AuthContext";
-import { useDemoTheme } from "@/context/DemoThemeContext";
 import type { Role } from "@/types";
 
 const PERSONAS: { role: Role; title: string; description: string; icon: "restaurant-outline" | "home-outline" | "heart-outline" }[] = [
@@ -35,7 +34,6 @@ const PERSONAS: { role: Role; title: string; description: string; icon: "restaur
 // matching mock host/sponsor details so the relevant screens (host tools, donor feed) aren't empty.
 export default function DemoRole() {
   const { continueAsDemoUser } = useAuth();
-  const { theme } = useDemoTheme();
   const [selected, setSelected] = useState<Role>("attendee");
 
   function handleContinue() {
@@ -46,10 +44,6 @@ export default function DemoRole() {
   return (
     <Screen scroll={false}>
       <Reveal>
-        <View style={styles.demoLabel}>
-          <View style={[styles.themeDot, { backgroundColor: theme.brand }]} />
-          <Text style={[styles.demoLabelText, { color: theme.brandDark }]}>UIUC DEMO · {theme.name.toUpperCase()} THEME</Text>
-        </View>
         <Text style={styles.title}>I want to be a...</Text>
         <Text style={styles.subtitle}>Pick a persona to explore the demo as — you can always come back and try another.</Text>
       </Reveal>
@@ -74,9 +68,6 @@ export default function DemoRole() {
 }
 
 const styles = StyleSheet.create({
-  demoLabel: { flexDirection: "row", alignItems: "center", gap: spacing.xs, marginBottom: spacing.sm },
-  themeDot: { width: 10, height: 10, borderRadius: 5 },
-  demoLabelText: { ...typography.label },
   title: { ...typography.h1, color: colors.textPrimary, marginBottom: spacing.xs },
   subtitle: { ...typography.body, color: colors.textSecondary, marginBottom: spacing.lg },
   options: { marginBottom: spacing.lg },

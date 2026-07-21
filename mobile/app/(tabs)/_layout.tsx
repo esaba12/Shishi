@@ -4,17 +4,15 @@ import { Ionicons } from "@expo/vector-icons";
 import { colors, fonts } from "@/constants/theme";
 import { t } from "@/lib/i18n";
 import { useResponsive } from "@/lib/responsive";
-import { useDemoTheme } from "@/context/DemoThemeContext";
 
 export default function TabsLayout() {
   const { isDesktop } = useResponsive();
-  const { theme } = useDemoTheme();
 
   return (
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: theme.brand,
+        tabBarActiveTintColor: colors.brand,
         tabBarInactiveTintColor: colors.textSecondary,
         // React Navigation 7: a left sidebar rail on desktop, bottom tabs on mobile/tablet web.
         tabBarPosition: isDesktop ? "left" : "bottom",
