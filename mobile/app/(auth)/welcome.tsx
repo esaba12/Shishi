@@ -12,7 +12,7 @@ export default function Welcome() {
   const { isDesktop } = useResponsive();
 
   function getStarted() {
-    router.push("/(auth)/phone");
+    router.push("/(auth)/email");
   }
   function demo() {
     router.push("/(auth)/demo-role");

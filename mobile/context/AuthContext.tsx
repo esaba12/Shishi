@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
+import { Platform } from "react-native";
 import type { Session } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabase";
 import { isSupabaseConfigured } from "@/lib/env";
@@ -12,9 +13,9 @@ interface AuthContextValue {
   profile: Profile | null;
   hostDetails: HostDetails | null;
   sponsorDetails: SponsorDetails | null;
-  pendingPhone: string | null;
-  requestOtp: (phone: string) => Promise<void>;
-  verifyOtp: (phone: string, code: string) => Promise<void>;
+  pendingEmail: string | null;
+  requestOtp: (email: string) => Promise<void>;
+  verifyOtp: (email: string, code: string) => Promise<void>;
   /** `persona` picks which demo profile to load — attendee is the baseline pillar every persona
    *  gets (Discover/RSVP), "host"/"sponsor" additionally grant that role with matching mock details
    *  so the relevant screens (host tools, donor feed) aren't empty. Defaults to plain attendee. */
@@ -36,7 +37,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [hostDetails, setHostDetails] = useState<HostDetails | null>(null);
   const [sponsorDetails, setSponsorDetails] = useState<SponsorDetails | null>(null);
-  const [pendingPhone, setPendingPhone] = useState<string | null>(null);
+  const [pendingEmail, setPendingEmail] = useState<string | null>(null);
 
   useEffect(() => {
     if (!isSupabaseConfigured) {
@@ -53,20 +54,33 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => sub.subscription.unsubscribe();
   }, []);
 
-  async function requestOtp(phone: string) {
-    setPendingPhone(phone);
+  // Email magic link for now, not phone: phone auth needs an SMS/WhatsApp provider (Twilio) that
+  // isn't fully set up yet (WhatsApp specifically needs Meta Business approval, which isn't
+  // instant). Email needs no third-party provider — Supabase sends it directly. It's a magic link,
+  // not a typed code, because customizing the email template to show an OTP code requires custom
+  // SMTP to be configured first (Supabase's default shared email templates aren't editable); the
+  // default "click to sign in" template works as-is. Clicking the link lands back on the site with
+  // the session in the URL hash, which lib/supabase.ts's detectSessionInUrl (web only) picks up
+  // automatically via onAuthStateChange below — see app/(auth)/email.tsx for the "check your email"
+  // state this leads to. Swap back to supabase.auth.signInWithOtp({ phone })/verifyOtp({ phone,
+  // type: "sms" }) once phone is ready; nothing else in the app depends on which channel this is.
+  async function requestOtp(email: string) {
+    setPendingEmail(email);
     if (!isSupabaseConfigured) return; // demo mode: verifyOtp accepts any code
-    const { error } = await supabase.auth.signInWithOtp({ phone });
+    const { error } = await supabase.auth.signInWithOtp({
+      email,
+      options: Platform.OS === "web" ? { emailRedirectTo: window.location.origin } : undefined,
+    });
     if (error) throw error;
   }
 
-  async function verifyOtp(phone: string, code: string) {
+  async function verifyOtp(email: string, code: string) {
     if (!isSupabaseConfigured) {
       // Demo mode without a Supabase project connected: any 6-digit code proceeds.
       setSession({ user: { id: "demo-user" } } as unknown as Session);
       return;
     }
-    const { data, error } = await supabase.auth.verifyOtp({ phone, token: code, type: "sms" });
+    const { data, error } = await supabase.auth.verifyOtp({ email, token: code, type: "email" });
     if (error) throw error;
     setSession(data.session);
   }
@@ -166,7 +180,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setProfile(null);
     setHostDetails(null);
     setSponsorDetails(null);
-    setPendingPhone(null);
+    setPendingEmail(null);
   }
 
   const value = useMemo<AuthContextValue>(
@@ -177,14 +191,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       profile,
       hostDetails,
       sponsorDetails,
-      pendingPhone,
+      pendingEmail,
       requestOtp,
       verifyOtp,
       continueAsDemoUser,
       completeOnboarding,
       signOut,
     }),
-    [isLoading, session, profile, hostDetails, sponsorDetails, pendingPhone]
+    [isLoading, session, profile, hostDetails, sponsorDetails, pendingEmail]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

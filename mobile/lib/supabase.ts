@@ -1,4 +1,5 @@
 import "react-native-url-polyfill/auto";
+import { Platform } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { createClient } from "@supabase/supabase-js";
 
@@ -25,7 +26,11 @@ export const supabase = createClient(
       storage: AsyncStorage,
       autoRefreshToken: true,
       persistSession: true,
-      detectSessionInUrl: false,
+      // Email auth is magic-link-based for now (see AuthContext.requestOtp) — the browser needs to
+      // parse the session out of the redirect URL's hash fragment when the link is clicked. Native
+      // has no such URL to parse from (it'd need deep-link handling instead, not built yet), so this
+      // stays off there.
+      detectSessionInUrl: Platform.OS === "web",
     },
   }
 );

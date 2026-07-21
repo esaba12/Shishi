@@ -9,7 +9,7 @@ import { useAuth } from "@/context/AuthContext";
 import { isSupabaseConfigured } from "@/lib/env";
 
 export default function VerifyOtp() {
-  const { phone } = useLocalSearchParams<{ phone: string }>();
+  const { email } = useLocalSearchParams<{ email: string }>();
   const { verifyOtp } = useAuth();
   const [code, setCode] = useState("");
   const [loading, setLoading] = useState(false);
@@ -19,7 +19,7 @@ export default function VerifyOtp() {
     setError(null);
     setLoading(true);
     try {
-      await verifyOtp(phone, code);
+      await verifyOtp(email, code);
       router.replace("/(onboarding)/role-select");
     } catch (e) {
       setError(e instanceof Error ? e.message : "Invalid code, try again.");
@@ -31,7 +31,7 @@ export default function VerifyOtp() {
   return (
     <Screen>
       <Text style={styles.title}>Enter the code</Text>
-      <Text style={styles.subtitle}>We sent a 6-digit code to {phone}.</Text>
+      <Text style={styles.subtitle}>We sent a 6-digit code to {email}.</Text>
       {!isSupabaseConfigured && (
         <Text style={styles.hint}>Demo mode: any 6-digit code works (e.g. 123456).</Text>
       )}
