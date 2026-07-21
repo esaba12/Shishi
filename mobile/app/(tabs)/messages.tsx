@@ -14,6 +14,7 @@ import type { MessageThread } from "@/types";
 export default function Messages() {
   const { profile } = useAuth();
   const { isDesktop } = useResponsive();
+  const isSponsorOnly = profile?.roles.includes("sponsor") && !profile.roles.includes("host");
   const [threads, setThreads] = useState<MessageThread[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -81,7 +82,11 @@ export default function Messages() {
           !loading ? (
             <EmptyState
               title="No conversations yet"
-              description="Messages unlock once a host approves your RSVP, or a guest joins your dinner."
+              description={
+                isSponsorOnly
+                  ? "Messages open once you fund a dinner and the host reaches out."
+                  : "Messages unlock once a host approves your RSVP, or a guest joins your dinner."
+              }
             />
           ) : null
         }

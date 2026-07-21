@@ -7,32 +7,36 @@ import { Button } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { DinnerCard } from "@/components/DinnerCard";
 import { colors, spacing, typography } from "@/constants/theme";
-import { fetchMyAttendingDinners, fetchMyHostedDinners, type AttendingDinner } from "@/lib/api";
+import { fetchMyAttendingDinners, fetchMyHostedDinners, fetchMyDonations, type AttendingDinner } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
-import type { Dinner } from "@/types";
+import type { Dinner, SponsorDonation } from "@/types";
 
 export default function MyDinners() {
   const { profile } = useAuth();
   const isHost = profile?.roles.includes("host");
-  const [tab, setTab] = useState<"attending" | "hosting">("attending");
+  const isSponsor = profile?.roles.includes("sponsor");
+  const [tab, setTab] = useState<"attending" | "hosting" | "donations">("attending");
   const [attending, setAttending] = useState<AttendingDinner[]>([]);
   const [hosted, setHosted] = useState<Dinner[]>([]);
+  const [donations, setDonations] = useState<SponsorDonation[]>([]);
   const [loading, setLoading] = useState(true);
 
   const load = useCallback(async () => {
     if (!profile) return;
     setLoading(true);
     try {
-      const [a, h] = await Promise.all([
+      const [a, h, d] = await Promise.all([
         fetchMyAttendingDinners(profile.id),
         isHost ? fetchMyHostedDinners(profile.id) : Promise.resolve([]),
+        isSponsor ? fetchMyDonations(profile.id) : Promise.resolve([]),
       ]);
       setAttending(a);
       setHosted(h);
+      setDonations(d);
     } finally {
       setLoading(false);
     }
-  }, [profile, isHost]);
+  }, [profile, isHost, isSponsor]);
 
   useFocusEffect(
     useCallback(() => {
@@ -44,10 +48,13 @@ export default function MyDinners() {
     <Screen scroll={false} padded={false}>
       <View style={styles.header}>
         <Text style={styles.title}>My Dinners</Text>
-        {isHost && (
+        {(isHost || isSponsor) && (
           <View style={styles.tabRow}>
             <Chip label="Attending" selected={tab === "attending"} onPress={() => setTab("attending")} />
-            <Chip label="Hosting" selected={tab === "hosting"} onPress={() => setTab("hosting")} />
+            {isHost && <Chip label="Hosting" selected={tab === "hosting"} onPress={() => setTab("hosting")} />}
+            {isSponsor && (
+              <Chip label="Donations" selected={tab === "donations"} onPress={() => setTab("donations")} />
+            )}
           </View>
         )}
         {isHost && tab === "hosting" && (
@@ -71,7 +78,7 @@ export default function MyDinners() {
             ) : null
           }
         />
-      ) : (
+      ) : tab === "hosting" ? (
         <FlatList
           data={hosted}
           keyExtractor={(item) => item.id}
@@ -87,6 +94,27 @@ export default function MyDinners() {
             ) : null
           }
         />
+      ) : (
+        <View style={styles.list}>
+          {donations.length > 0 ? (
+            <>
+              <Text style={styles.donationsSummary}>
+                ₪{donations.filter((d) => d.status === "succeeded").reduce((sum, d) => sum + d.amount, 0)} given
+                across {donations.filter((d) => d.status === "succeeded").length} dinners
+              </Text>
+              <Button
+                label="View all donations"
+                variant="secondary"
+                onPress={() => router.push("/sponsor/my-donations")}
+              />
+            </>
+          ) : (
+            <EmptyState
+              title="No donations yet"
+              description="Fund a dinner from the donor feed and it'll show up here."
+            />
+          )}
+        </View>
       )}
     </Screen>
   );
@@ -97,4 +125,5 @@ const styles = StyleSheet.create({
   title: { ...typography.h1, color: colors.textPrimary, marginBottom: spacing.md },
   tabRow: { flexDirection: "row", marginBottom: spacing.sm },
   list: { paddingHorizontal: spacing.lg, paddingBottom: spacing.xl },
+  donationsSummary: { ...typography.body, color: colors.textSecondary, marginBottom: spacing.md },
 });
