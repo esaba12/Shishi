@@ -1,5 +1,5 @@
 import { supabase } from "@/lib/supabase";
-import { isSupabaseConfigured } from "@/lib/env";
+import { isDemoSessionActive, isSupabaseConfigured } from "@/lib/env";
 import { threadKey } from "@/lib/threadKey";
 import {
   mockDinners,
@@ -25,6 +25,12 @@ import type {
  *  Mirrored server-side in the `get_dinner_address` Postgres function (supabase/schema.sql) as the
  *  interval that actually gates the RPC — intentionally duplicated, not derived from one source. */
 export const ADDRESS_REVEAL_HOURS_BEFORE = 24;
+
+// A demo session never authenticates against real Supabase Auth, so it can't pass RLS even when a
+// project is connected — route it to mock data the same way an unconfigured project would be.
+function useMockData(): boolean {
+  return !isSupabaseConfigured || isDemoSessionActive();
+}
 
 export function isAddressRevealed(dinner: Pick<Dinner, "date" | "startTime">): boolean {
   const start = new Date(`${dinner.date}T${dinner.startTime}:00`);
@@ -75,7 +81,7 @@ function rowToDinner(row: any): Dinner {
  *  host-or-approved-and-past-reveal-window rule server-side via the get_dinner_address RPC. In demo
  *  mode there's no RLS to bypass, so callers should keep reading dinner.exactAddress directly. */
 export async function fetchDinnerAddress(dinnerId: string): Promise<string | null> {
-  if (!isSupabaseConfigured) return null;
+  if (useMockData()) return null;
   const { data, error } = await supabase.rpc("get_dinner_address", { p_dinner_id: dinnerId });
   if (error) throw error;
   return data ?? null;
@@ -87,7 +93,7 @@ export interface DinnerFilters {
 }
 
 export async function fetchDinners(filters: DinnerFilters = {}): Promise<Dinner[]> {
-  if (!isSupabaseConfigured) {
+  if (useMockData()) {
     return mockDinners.filter((d) => !filters.kosherLevel || d.kosherLevel === filters.kosherLevel);
   }
   let query = supabase
@@ -103,7 +109,7 @@ export async function fetchDinners(filters: DinnerFilters = {}): Promise<Dinner[
 }
 
 export async function fetchDinner(id: string): Promise<Dinner | null> {
-  if (!isSupabaseConfigured) {
+  if (useMockData()) {
     return mockDinners.find((d) => d.id === id) ?? null;
   }
   const { data, error } = await supabase
@@ -121,7 +127,7 @@ export interface AttendingDinner {
 }
 
 export async function fetchMyAttendingDinners(attendeeId: string): Promise<AttendingDinner[]> {
-  if (!isSupabaseConfigured) {
+  if (useMockData()) {
     return Object.entries(mockRsvps).map(([dinnerId, rsvp]) => ({
       dinner: mockDinners.find((d) => d.id === dinnerId)!,
       rsvpStatus: rsvp.status,
@@ -139,7 +145,7 @@ export async function fetchMyAttendingDinners(attendeeId: string): Promise<Atten
 }
 
 export async function fetchMyHostedDinners(hostId: string): Promise<Dinner[]> {
-  if (!isSupabaseConfigured) {
+  if (useMockData()) {
     return mockDinners.filter((d) => d.hostId === hostId);
   }
   const { data, error } = await supabase
@@ -169,7 +175,7 @@ export interface CreateDinnerInput {
 }
 
 export async function createDinner(input: CreateDinnerInput): Promise<Dinner> {
-  if (!isSupabaseConfigured) {
+  if (useMockData()) {
     const dinner: Dinner = {
       id: `mock-${Date.now()}`,
       hostId: input.hostId,
@@ -228,7 +234,7 @@ export async function fetchMyRsvpForDinner(
   dinnerId: string,
   attendeeId: string
 ): Promise<{ status: string; paymentStatus: string } | null> {
-  if (!isSupabaseConfigured) return mockRsvps[dinnerId] ?? null;
+  if (useMockData()) return mockRsvps[dinnerId] ?? null;
   const { data, error } = await supabase
     .from("rsvps")
     .select("status, payment_status")
@@ -245,7 +251,7 @@ export async function createRsvp(
   attendeeId: string,
   opts: { paid: boolean; autoApprove: boolean }
 ): Promise<void> {
-  if (!isSupabaseConfigured) {
+  if (useMockData()) {
     mockRsvps[dinnerId] = {
       status: opts.autoApprove ? "approved" : "pending",
       paymentStatus: opts.paid ? "paid" : "not_required",
@@ -264,7 +270,7 @@ export async function createRsvp(
 }
 
 export async function createPaymentIntent(dinnerId: string): Promise<{ clientSecret: string }> {
-  if (!isSupabaseConfigured) {
+  if (useMockData()) {
     // Demo mode: simulate a client secret so the Stripe sheet UI can be previewed;
     // real charge creation requires the create-payment-intent Edge Function + a Supabase project.
     return { clientSecret: "demo_client_secret" };
@@ -286,7 +292,7 @@ export interface DinnerRsvp {
 }
 
 export async function fetchRsvpsForDinner(dinnerId: string): Promise<DinnerRsvp[]> {
-  if (!isSupabaseConfigured) return [];
+  if (useMockData()) return [];
   const { data, error } = await supabase
     .from("rsvps")
     .select("id, status, payment_status, attendee_id, attendee:profiles!rsvps_attendee_id_fkey(name, photo_url)")
@@ -303,7 +309,7 @@ export async function fetchRsvpsForDinner(dinnerId: string): Promise<DinnerRsvp[
 }
 
 export async function updateRsvpStatus(rsvpId: string, status: "approved" | "declined"): Promise<void> {
-  if (!isSupabaseConfigured) return;
+  if (useMockData()) return;
   const { error } = await supabase.from("rsvps").update({ status }).eq("id", rsvpId);
   if (error) throw error;
 }
@@ -341,7 +347,7 @@ function rowToPotluckItem(row: any): PotluckItem {
  *  anyone who can see the dinner; RLS narrows which *claims* (names) come back per §5.7/§8 — only
  *  the host, the claimant, and already-approved guests see who claimed what. */
 export async function fetchPotluckItems(dinnerId: string): Promise<PotluckItem[]> {
-  if (!isSupabaseConfigured) {
+  if (useMockData()) {
     return mockPotluckItems[dinnerId] ?? [];
   }
   const { data, error } = await supabase
@@ -366,7 +372,7 @@ export interface CreatePotluckItemInput {
 /** Host-only: add a thing the dinner needs — a food/drink/supply item, or a money request for
  *  guests who'd rather chip in than bring something physical. */
 export async function createPotluckItem(input: CreatePotluckItemInput): Promise<PotluckItem> {
-  if (!isSupabaseConfigured) {
+  if (useMockData()) {
     const item: PotluckItem = {
       id: `mock-item-${Date.now()}`,
       dinnerId: input.dinnerId,
@@ -401,7 +407,7 @@ export async function createPotluckItem(input: CreatePotluckItemInput): Promise<
 
 /** Host-only: remove an item from the checklist (also clears any claims against it). */
 export async function deletePotluckItem(itemId: string, dinnerId: string): Promise<void> {
-  if (!isSupabaseConfigured) {
+  if (useMockData()) {
     mockPotluckItems[dinnerId] = (mockPotluckItems[dinnerId] ?? []).filter((i) => i.id !== itemId);
     return;
   }
@@ -423,7 +429,7 @@ export interface ClaimPotluckItemInput {
  *  bring an item, or pledge a contribution instead. One claim per attendee per item — calling this
  *  again updates the existing claim rather than creating a duplicate. */
 export async function claimPotluckItem(input: ClaimPotluckItemInput): Promise<PotluckClaim> {
-  if (!isSupabaseConfigured) {
+  if (useMockData()) {
     const claim: PotluckClaim = {
       id: `mock-claim-${Date.now()}`,
       itemId: input.itemId,
@@ -467,7 +473,7 @@ export async function cancelPotluckClaim(
   itemId: string,
   attendeeId: string
 ): Promise<void> {
-  if (!isSupabaseConfigured) {
+  if (useMockData()) {
     const items = mockPotluckItems[dinnerId] ?? [];
     const item = items.find((i) => i.id === itemId);
     if (item) item.claims = item.claims.filter((c) => c.attendeeId !== attendeeId);
@@ -478,7 +484,7 @@ export async function cancelPotluckClaim(
 }
 
 export async function fetchThreads(profileId: string): Promise<MessageThread[]> {
-  if (!isSupabaseConfigured) return mockThreads;
+  if (useMockData()) return mockThreads;
   const { data, error } = await supabase
     .from("messages")
     .select(
@@ -511,7 +517,7 @@ export async function fetchThreads(profileId: string): Promise<MessageThread[]> 
 }
 
 export async function fetchMessages(dinnerId: string, counterpartId: string): Promise<ChatMessage[]> {
-  if (!isSupabaseConfigured) return mockMessages[threadKey(dinnerId, counterpartId)] ?? [];
+  if (useMockData()) return mockMessages[threadKey(dinnerId, counterpartId)] ?? [];
   const { data, error } = await supabase
     .from("messages")
     .select("id, sender_id, body, created_at")
@@ -533,7 +539,7 @@ export async function sendMessage(
   recipientId: string,
   body: string
 ): Promise<void> {
-  if (!isSupabaseConfigured) {
+  if (useMockData()) {
     const key = threadKey(dinnerId, recipientId);
     mockMessages[key] = [
       ...(mockMessages[key] ?? []),
@@ -553,7 +559,7 @@ export async function createReport(
   targetId: string,
   reason: string
 ): Promise<void> {
-  if (!isSupabaseConfigured) return;
+  if (useMockData()) return;
   const { error } = await supabase
     .from("reports")
     .insert({ reporter_id: reporterId, target_type: targetType, target_id: targetId, reason });
@@ -561,7 +567,7 @@ export async function createReport(
 }
 
 export async function fetchProfile(id: string): Promise<Profile | null> {
-  if (!isSupabaseConfigured) return null;
+  if (useMockData()) return null;
   const { data, error } = await supabase.from("profiles").select("*").eq("id", id).maybeSingle();
   if (error) throw error;
   if (!data) return null;
@@ -614,7 +620,7 @@ export async function fetchSponsorFeed(prefs: SponsorPrefs): Promise<Dinner[]> {
     return true;
   };
 
-  if (!isSupabaseConfigured) {
+  if (useMockData()) {
     return mockDinners.filter(fits);
   }
   let query = supabase
@@ -644,7 +650,7 @@ export async function createDonationIntent(
   donorReceiptEmail: string,
   opts: { anonymous: boolean; message: string | null }
 ): Promise<{ clientSecret: string; donationId: string }> {
-  if (!isSupabaseConfigured) {
+  if (useMockData()) {
     const dinner = mockDinners.find((d) => d.id === dinnerId);
     const donation: SponsorDonation = {
       id: `mock-donation-${Date.now()}`,
@@ -689,7 +695,7 @@ function rowToDonation(row: any): SponsorDonation {
 }
 
 export async function fetchMyDonations(sponsorId: string): Promise<SponsorDonation[]> {
-  if (!isSupabaseConfigured) return mockDonations.filter((d) => d.sponsorId === sponsorId);
+  if (useMockData()) return mockDonations.filter((d) => d.sponsorId === sponsorId);
   const { data, error } = await supabase
     .from("sponsor_donations")
     .select("*")
@@ -702,7 +708,7 @@ export async function fetchMyDonations(sponsorId: string): Promise<SponsorDonati
 /** Donations made *to* a specific dinner — used on the dinner-detail/manage screens so a host can see
  *  who's funding them (respecting `anonymous`) and, once a donation succeeds, message the sponsor. */
 export async function fetchDonationsForDinner(dinnerId: string): Promise<SponsorDonation[]> {
-  if (!isSupabaseConfigured) return mockDonations.filter((d) => d.dinnerId === dinnerId);
+  if (useMockData()) return mockDonations.filter((d) => d.dinnerId === dinnerId);
   const { data, error } = await supabase
     .from("sponsor_donations")
     .select("*")

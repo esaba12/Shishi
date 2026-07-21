@@ -3,7 +3,7 @@ import { Platform } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import type { Session } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabase";
-import { isSupabaseConfigured } from "@/lib/env";
+import { isSupabaseConfigured, setDemoSessionActive } from "@/lib/env";
 import { fetchProfile } from "@/lib/api";
 import { mockHostDetails, mockProfile, mockSponsorDetails } from "@/data/mock";
 import type { HostDetails, Profile, Role, SponsorDetails } from "@/types";
@@ -99,6 +99,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // need to go from "we have a session" to "we know whether this user has a profile yet" before
   // any screen can safely decide between onboarding and the main app (see index.tsx's redirect).
   async function hydrateFromSession(next: Session | null) {
+    setDemoSessionActive(false);
     setSession(next);
     if (!next) {
       setProfile(null);
@@ -112,22 +113,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   useEffect(() => {
-    if (!isSupabaseConfigured) {
-      loadDemoCache().then((cache) => {
-        if (cache?.profile) {
-          setSession({ user: { id: "demo-user" } } as unknown as Session);
-          setProfile(cache.profile);
-          setHostDetails(cache.hostDetails);
-          setSponsorDetails(cache.sponsorDetails);
+    (async () => {
+      if (isSupabaseConfigured) {
+        const { data } = await supabase.auth.getSession();
+        if (data.session) {
+          await hydrateFromSession(data.session);
+          setIsLoading(false);
+          return;
         }
-        setIsLoading(false);
-      });
-      return;
-    }
-    supabase.auth.getSession().then(async ({ data }) => {
-      await hydrateFromSession(data.session);
+      }
+      // No real Supabase session (or no project connected) — fall back to a cached demo session,
+      // e.g. from a previous /demo visit, so reload doesn't bounce a demo user back to the picker.
+      const cache = await loadDemoCache();
+      if (cache?.profile) {
+        setDemoSessionActive(true);
+        setSession({ user: { id: "demo-user" } } as unknown as Session);
+        setProfile(cache.profile);
+        setHostDetails(cache.hostDetails);
+        setSponsorDetails(cache.sponsorDetails);
+      }
       setIsLoading(false);
-    });
+    })();
+
+    if (!isSupabaseConfigured) return;
     const { data: sub } = supabase.auth.onAuthStateChange((_event, next) => {
       hydrateFromSession(next);
     });
@@ -173,6 +181,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const nextProfile = { ...mockProfile, roles };
     const nextHostDetails = roles.includes("host") ? mockHostDetails : null;
     const nextSponsorDetails = roles.includes("sponsor") ? mockSponsorDetails : null;
+    setDemoSessionActive(true);
     setSession({ user: { id: "demo-user" } } as unknown as Session);
     setProfile(nextProfile);
     setHostDetails(nextHostDetails);
@@ -187,6 +196,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     sponsorDetails?: Partial<SponsorDetails>;
   }) {
     const userId = session?.user.id ?? "demo-user";
+    const isDemo = userId === "demo-user";
     const nextProfile: Profile = {
       id: userId,
       name: input.profile.name,
@@ -224,11 +234,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setProfile(nextProfile);
     setHostDetails(nextHostDetails);
     setSponsorDetails(nextSponsorDetails);
-    if (!isSupabaseConfigured) {
+    if (!isSupabaseConfigured || isDemo) {
       await saveDemoCache({ profile: nextProfile, hostDetails: nextHostDetails, sponsorDetails: nextSponsorDetails });
     }
 
-    if (isSupabaseConfigured && session) {
+    if (isSupabaseConfigured && session && !isDemo) {
       const { error } = await supabase.from("profiles").upsert({
         id: userId,
         name: nextProfile.name,
@@ -268,7 +278,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   async function signOut() {
     if (isSupabaseConfigured) await supabase.auth.signOut();
-    else await AsyncStorage.removeItem(DEMO_CACHE_KEY);
+    await AsyncStorage.removeItem(DEMO_CACHE_KEY);
+    setDemoSessionActive(false);
     setSession(null);
     setProfile(null);
     setHostDetails(null);
