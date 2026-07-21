@@ -1,2 +1,5 @@
 # Supabase CLI local link/session state (machine-specific, not project source).
 supabase/.temp/
+
+# Claude Code local tooling state (settings, worktrees) — machine-specific, not project source.
+.claude/

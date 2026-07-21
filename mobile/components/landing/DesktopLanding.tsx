@@ -6,16 +6,17 @@ import { Button } from "@/components/ui/Button";
 import { Reveal } from "@/components/ui/Reveal";
 import { LogoMark } from "@/components/brand/Logo";
 import { colors, radii, spacing, typography } from "@/constants/theme";
-import { MISSION_STATS } from "@/constants/options";
+import type { Role } from "@/types";
 
 const ROLE_TEASERS: {
+  role: Role;
   icon: keyof typeof Ionicons.glyphMap;
   title: string;
   description: string;
 }[] = [
-  { icon: "restaurant-outline", title: "Find a table", description: "Discover a warm Shabbat dinner near you and RSVP in minutes." },
-  { icon: "home-outline", title: "Open your home", description: "Host a dinner, set your own budget, and let us handle the rest." },
-  { icon: "heart-outline", title: "Fund a dinner", description: "Cover a host's budget directly and see the table it makes possible." },
+  { role: "attendee", icon: "restaurant-outline", title: "Find a table", description: "Discover a warm Shabbat dinner near you and RSVP in minutes." },
+  { role: "host", icon: "home-outline", title: "Open your home", description: "Host a dinner, set your own budget, and let us handle the rest." },
+  { role: "sponsor", icon: "heart-outline", title: "Fund a dinner", description: "Cover a host's budget directly and see the table it makes possible." },
 ];
 
 /** Desktop-only entry point (≥900px) — the mobile welcome screen (bare wordmark + two buttons) stays
@@ -24,7 +25,13 @@ const ROLE_TEASERS: {
  *  the rest of the app's motion language (Reveal/SelectCard) was building toward. No photography is
  *  available yet, so the right column is a generative "candlelight" visual built from the existing
  *  brand system (gradient + soft glow layers + the ש mark) rather than a placeholder image. */
-export function DesktopLanding({ onGetStarted, onDemo }: { onGetStarted: () => void; onDemo?: () => void }) {
+export function DesktopLanding({
+  onGetStarted,
+  onDemo,
+}: {
+  onGetStarted: (role?: Role) => void;
+  onDemo?: () => void;
+}) {
   return (
     <View style={styles.row}>
       <View style={styles.left}>
@@ -50,7 +57,7 @@ export function DesktopLanding({ onGetStarted, onDemo }: { onGetStarted: () => v
         <View style={styles.teaserGrid}>
           {ROLE_TEASERS.map((role, i) => (
             <Reveal key={role.title} delay={240 + i * 70} style={styles.teaserWrap}>
-              <Pressable style={styles.teaser} onPress={onGetStarted}>
+              <Pressable style={styles.teaser} onPress={() => onGetStarted(role.role)}>
                 <View style={styles.teaserIcon}>
                   <Ionicons name={role.icon} size={20} color={colors.brand} />
                 </View>
@@ -68,15 +75,6 @@ export function DesktopLanding({ onGetStarted, onDemo }: { onGetStarted: () => v
         <View style={[styles.glow, styles.glowTwo]} />
         <View style={[styles.glow, styles.glowThree]} />
         <LogoMark size={72} style={styles.watermark} />
-
-        <View style={styles.statsPanel}>
-          {MISSION_STATS.map((stat) => (
-            <View key={stat.value} style={styles.statRow}>
-              <Text style={styles.statValue}>{stat.value}</Text>
-              <Text style={styles.statLabel}>{stat.label}</Text>
-            </View>
-          ))}
-        </View>
       </View>
     </View>
   );
@@ -130,14 +128,4 @@ const styles = StyleSheet.create({
   glowTwo: { width: 280, height: 280, bottom: -60, end: -40, backgroundColor: "rgba(255,255,255,0.1)" },
   glowThree: { width: 180, height: 180, top: "38%", start: "55%", backgroundColor: "rgba(255,255,255,0.12)" },
   watermark: { opacity: 0.9 },
-  statsPanel: {
-    position: "absolute",
-    bottom: spacing.xxl,
-    start: spacing.xl,
-    end: spacing.xl,
-    gap: spacing.sm,
-  },
-  statRow: { flexDirection: "row", alignItems: "baseline", gap: spacing.sm },
-  statValue: { ...typography.h2, color: colors.onBrand, width: 90 },
-  statLabel: { ...typography.caption, color: "rgba(255,255,255,0.85)", flex: 1 },
 });

@@ -3,23 +3,40 @@ import { FlatList, StyleSheet, View } from "react-native";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { DinnerCardSkeleton } from "@/components/ui/Skeleton";
 import { DinnerCard } from "@/components/DinnerCard";
-import { DinnerMap } from "@/components/DinnerMap";
+import { DinnerMapPane } from "@/components/discover/DinnerMapPane";
 import { colors, spacing } from "@/constants/theme";
 import { t } from "@/lib/i18n";
+import type { LatLng } from "@/lib/geo";
 import type { Dinner } from "@/types";
 
 interface DiscoverDesktopLayoutProps {
+  /** Full kosher-filtered set — every one gets a pin on the map regardless of the radius filter. */
   dinners: Dinner[];
+  /** Radius-filtered subset shown in the list column, mirroring what the radius circle covers. */
+  visibleDinners: Dinner[];
   loading: boolean;
   onRefresh: () => void;
   onSelect: (dinnerId: string) => void;
   onHost: () => void;
+  mapCenter: LatLng;
+  radiusKm: number | null;
+  onSearchThisArea: (center: LatLng) => void;
 }
 
 /** Desktop-only persistent split view: a scrollable card list beside a fixed map, so a wide viewport
  *  isn't just a stretched-out phone layout. Mobile/tablet keep the single-column list/map toggle in
  *  app/(tabs)/index.tsx unchanged. */
-export function DiscoverDesktopLayout({ dinners, loading, onRefresh, onSelect, onHost }: DiscoverDesktopLayoutProps) {
+export function DiscoverDesktopLayout({
+  dinners,
+  visibleDinners,
+  loading,
+  onRefresh,
+  onSelect,
+  onHost,
+  mapCenter,
+  radiusKm,
+  onSearchThisArea,
+}: DiscoverDesktopLayoutProps) {
   const initialLoading = loading && dinners.length === 0;
 
   return (
@@ -33,7 +50,7 @@ export function DiscoverDesktopLayout({ dinners, loading, onRefresh, onSelect, o
           </View>
         ) : (
           <FlatList
-            data={dinners}
+            data={visibleDinners}
             keyExtractor={(item) => item.id}
             contentContainerStyle={styles.listContent}
             refreshing={loading}
@@ -53,7 +70,13 @@ export function DiscoverDesktopLayout({ dinners, loading, onRefresh, onSelect, o
         )}
       </View>
       <View style={styles.mapColumn}>
-        <DinnerMap dinners={dinners} onSelect={onSelect} />
+        <DinnerMapPane
+          dinners={dinners}
+          onSelect={onSelect}
+          center={mapCenter}
+          radiusKm={radiusKm}
+          onSearchThisArea={onSearchThisArea}
+        />
       </View>
     </View>
   );

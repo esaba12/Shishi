@@ -1,31 +1,23 @@
 import React, { useState } from "react";
-import { Platform, StyleSheet, Switch, Text, View } from "react-native";
+import { StyleSheet, Switch, Text, View } from "react-native";
 import { router } from "expo-router";
-import DateTimePicker from "@react-native-community/datetimepicker";
 import { Screen } from "@/components/ui/Screen";
 import { Header } from "@/components/ui/Header";
 import { TextField } from "@/components/ui/TextField";
 import { Button } from "@/components/ui/Button";
 import { Chip } from "@/components/ui/Chip";
 import { Reveal } from "@/components/ui/Reveal";
+import { FridayPicker } from "@/components/FridayPicker";
 import { colors, radii, spacing, typography } from "@/constants/theme";
 import { DINNER_TYPE_TAGS, KOSHER_LEVELS } from "@/constants/options";
 import { createDinner } from "@/lib/api";
+import { nextFriday } from "@/lib/fridays";
 import { useAuth } from "@/context/AuthContext";
 import type { ApprovalMode, KosherLevel } from "@/types/database";
-
-function nextFriday(): Date {
-  const d = new Date();
-  const day = d.getDay();
-  const diff = (5 - day + 7) % 7 || 7;
-  d.setDate(d.getDate() + diff);
-  return d;
-}
 
 export default function CreateDinner() {
   const { profile } = useAuth();
   const [date, setDate] = useState(nextFriday());
-  const [showDatePicker, setShowDatePicker] = useState(false);
   const [startTime, setStartTime] = useState("19:30");
   const [capacity, setCapacity] = useState("6");
   const [area, setArea] = useState("");
@@ -84,22 +76,8 @@ export default function CreateDinner() {
       <Header title="Host a Shabbat" />
 
       <Text style={styles.label}>Date</Text>
-      <Button
-        label={date.toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" })}
-        variant="secondary"
-        onPress={() => setShowDatePicker(true)}
-      />
-      {showDatePicker && (
-        <DateTimePicker
-          value={date}
-          mode="date"
-          minimumDate={new Date()}
-          onChange={(_, selected) => {
-            setShowDatePicker(Platform.OS === "ios");
-            if (selected) setDate(selected);
-          }}
-        />
-      )}
+      <Text style={styles.fridaysOnly}>Shabbat dinners run Friday nights — pick an upcoming Friday.</Text>
+      <FridayPicker value={date} onChange={setDate} />
 
       <View style={{ marginTop: spacing.md }}>
         <TextField label="Start time" value={startTime} onChangeText={setStartTime} placeholder="19:30" />
@@ -203,4 +181,5 @@ const styles = StyleSheet.create({
     marginBottom: spacing.lg,
   },
   sponsorHelp: { ...typography.caption, color: colors.textSecondary },
+  fridaysOnly: { ...typography.caption, color: colors.textSecondary, marginBottom: spacing.sm },
 });
