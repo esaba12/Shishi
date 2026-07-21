@@ -2,7 +2,7 @@ import React, { createContext, useContext, useEffect, useMemo, useState } from "
 import type { Session } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabase";
 import { isSupabaseConfigured } from "@/lib/env";
-import { mockProfile } from "@/data/mock";
+import { mockHostDetails, mockProfile, mockSponsorDetails } from "@/data/mock";
 import type { HostDetails, Profile, Role, SponsorDetails } from "@/types";
 
 interface AuthContextValue {
@@ -71,6 +71,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   function continueAsDemoUser() {
     setSession({ user: { id: "demo-user" } } as unknown as Session);
     setProfile(mockProfile);
+    if (mockProfile.roles.includes("host")) setHostDetails(mockHostDetails);
+    if (mockProfile.roles.includes("sponsor")) setSponsorDetails(mockSponsorDetails);
   }
 
   async function completeOnboarding(input: {

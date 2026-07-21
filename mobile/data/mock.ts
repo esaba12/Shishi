@@ -1,4 +1,13 @@
-import type { ChatMessage, Dinner, MessageThread, PotluckItem, Profile, SponsorDonation } from "@/types";
+import type {
+  ChatMessage,
+  Dinner,
+  HostDetails,
+  MessageThread,
+  PotluckItem,
+  Profile,
+  SponsorDetails,
+  SponsorDonation,
+} from "@/types";
 import { threadKey } from "@/lib/threadKey";
 
 // Used only when Supabase isn't configured yet (see lib/env.ts), so the app is
@@ -15,8 +24,26 @@ export const mockProfile: Profile = {
   dietaryPrefs: "Vegetarian",
   interests: ["Hiking", "Startups", "Music"],
   funFact: "I once hiked the entire Israel National Trail.",
-  roles: ["attendee"],
+  // Includes "host" and "sponsor" so demo mode can click through the full host loop (create a
+  // dinner, manage RSVPs, edit the potluck checklist) and the sponsor donor feed, without a real
+  // account.
+  roles: ["attendee", "host", "sponsor"],
   verificationTier: 1,
+};
+
+export const mockHostDetails: HostDetails = {
+  bio: "I love hosting big, loud Shabbat tables — the more mismatched chairs the better.",
+  homeVibe: "Warm and a little chaotic, in a good way.",
+  dinnersHostedCount: 3,
+};
+
+export const mockSponsorDetails: SponsorDetails = {
+  whyIGive: "I grew up with a full table every Friday night and want that for everyone here.",
+  budgetCeiling: 1000,
+  monthlyBudget: 3000,
+  locationPref: null,
+  dinnerTypePrefs: [],
+  status: "active",
 };
 
 export const mockDinners: Dinner[] = [
