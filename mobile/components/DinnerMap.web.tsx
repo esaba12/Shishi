@@ -1,8 +1,9 @@
 import React, { useEffect } from "react";
 import { View } from "react-native";
-import { MapContainer, Marker, Popup, TileLayer } from "react-leaflet";
+import { Circle, MapContainer, Marker, Popup, TileLayer, useMapEvents } from "react-leaflet";
 import L from "leaflet";
-import { TEL_AVIV_REGION, pseudoCoordsForDinner } from "@/lib/geo";
+import { TEL_AVIV_REGION, pseudoCoordsForDinner, type LatLng } from "@/lib/geo";
+import { colors } from "@/constants/theme";
 import type { Dinner } from "@/types";
 
 // Web map via Leaflet + OpenStreetMap (free, no API key). Only loaded on web — native uses
@@ -36,7 +37,26 @@ const markerIcon = L.icon({
   shadowSize: [41, 41],
 });
 
-export function DinnerMap({ dinners, onSelect }: { dinners: Dinner[]; onSelect: (id: string) => void }) {
+/** Must render as a child of MapContainer — useMapEvents only works inside the Leaflet context. */
+function CenterTracker({ onChange }: { onChange: (center: LatLng) => void }) {
+  useMapEvents({
+    moveend: (e) => {
+      const c = e.target.getCenter();
+      onChange({ latitude: c.lat, longitude: c.lng });
+    },
+  });
+  return null;
+}
+
+interface DinnerMapProps {
+  dinners: Dinner[];
+  onSelect: (id: string) => void;
+  center?: LatLng;
+  radiusKm?: number | null;
+  onRegionChange?: (center: LatLng) => void;
+}
+
+export function DinnerMap({ dinners, onSelect, center, radiusKm, onRegionChange }: DinnerMapProps) {
   useLeafletStylesheet();
 
   return (
@@ -53,6 +73,14 @@ export function DinnerMap({ dinners, onSelect }: { dinners: Dinner[]; onSelect: 
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         />
+        {onRegionChange && <CenterTracker onChange={onRegionChange} />}
+        {center && radiusKm != null && (
+          <Circle
+            center={[center.latitude, center.longitude]}
+            radius={radiusKm * 1000}
+            pathOptions={{ color: colors.brand, weight: 1.5, fillColor: colors.brand, fillOpacity: 0.08 }}
+          />
+        )}
         {dinners.map((dinner) => {
           const c = pseudoCoordsForDinner(dinner);
           return (

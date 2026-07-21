@@ -8,7 +8,7 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { DinnerCardSkeleton } from "@/components/ui/Skeleton";
 import { useToast } from "@/components/ui/Toast";
 import { DinnerCard } from "@/components/DinnerCard";
-import { DinnerMap } from "@/components/DinnerMap";
+import { DinnerMapPane } from "@/components/discover/DinnerMapPane";
 import { DiscoverDesktopLayout } from "@/components/discover/DiscoverDesktopLayout";
 import { Logo } from "@/components/brand/Logo";
 import { colors, radii, spacing, typography } from "@/constants/theme";
@@ -17,6 +17,7 @@ import { t } from "@/lib/i18n";
 import { useResponsive } from "@/lib/responsive";
 import { fetchDinners } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
+import { RADIUS_OPTIONS, TEL_AVIV_REGION, haversineDistanceKm, pseudoCoordsForDinner, type LatLng } from "@/lib/geo";
 import type { Dinner } from "@/types";
 import type { KosherLevel } from "@/types/database";
 
@@ -25,11 +26,16 @@ export default function Discover() {
   const [kosherFilter, setKosherFilter] = useState<KosherLevel | null>(null);
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState<"list" | "map">("list");
+  const [radiusKm, setRadiusKm] = useState<number | null>(null);
+  const [mapCenter, setMapCenter] = useState<LatLng>(TEL_AVIV_REGION);
   const { show } = useToast();
   const { isDesktop } = useResponsive();
   const { profile, hostDetails, sponsorDetails } = useAuth();
   const isHost = profile?.roles.includes("host");
   const isSponsor = profile?.roles.includes("sponsor");
+
+  const visibleDinners =
+    radiusKm == null ? dinners : dinners.filter((d) => haversineDistanceKm(pseudoCoordsForDinner(d), mapCenter) <= radiusKm);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -100,18 +106,38 @@ export default function Discover() {
             />
           ))}
         </View>
+        <View style={styles.chipRow}>
+          {RADIUS_OPTIONS.map((opt) => (
+            <Chip key={opt.label} label={opt.label} selected={radiusKm === opt.km} onPress={() => setRadiusKm(opt.km)} />
+          ))}
+        </View>
+        {radiusKm != null && (
+          <Text style={styles.resultsCaption}>
+            {visibleDinners.length} dinner{visibleDinners.length === 1 ? "" : "s"} within {radiusKm}km
+          </Text>
+        )}
       </View>
 
       {isDesktop ? (
         <DiscoverDesktopLayout
           dinners={dinners}
+          visibleDinners={visibleDinners}
           loading={loading}
           onRefresh={load}
           onSelect={(dinnerId) => router.push(`/dinner/${dinnerId}`)}
           onHost={() => router.push("/dinner/create")}
+          mapCenter={mapCenter}
+          radiusKm={radiusKm}
+          onSearchThisArea={setMapCenter}
         />
       ) : view === "map" ? (
-        <DinnerMap dinners={dinners} onSelect={(dinnerId) => router.push(`/dinner/${dinnerId}`)} />
+        <DinnerMapPane
+          dinners={dinners}
+          onSelect={(dinnerId) => router.push(`/dinner/${dinnerId}`)}
+          center={mapCenter}
+          radiusKm={radiusKm}
+          onSearchThisArea={setMapCenter}
+        />
       ) : initialLoading ? (
         <View style={styles.list}>
           {[0, 1, 2, 3].map((i) => (
@@ -120,7 +146,7 @@ export default function Discover() {
         </View>
       ) : (
         <FlatList
-          data={dinners}
+          data={visibleDinners}
           keyExtractor={(item) => item.id}
           contentContainerStyle={styles.list}
           refreshing={loading}
@@ -171,6 +197,7 @@ const styles = StyleSheet.create({
   title: { ...typography.h1, color: colors.textPrimary, marginTop: 2 },
   subtitle: { ...typography.body, color: colors.textSecondary, marginTop: spacing.xs, marginBottom: spacing.md },
   chipRow: { flexDirection: "row", flexWrap: "wrap" },
+  resultsCaption: { ...typography.caption, color: colors.textSecondary, marginBottom: spacing.sm },
   personaCard: {
     backgroundColor: colors.brandSoft,
     borderRadius: radii.lg,
