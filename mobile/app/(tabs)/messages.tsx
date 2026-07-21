@@ -3,14 +3,17 @@ import { FlatList, Image, Pressable, StyleSheet, Text, View } from "react-native
 import { router, useFocusEffect } from "expo-router";
 import { Screen } from "@/components/ui/Screen";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { MessagesDesktopLayout } from "@/components/messages/MessagesDesktopLayout";
 import { colors, radii, spacing, typography } from "@/constants/theme";
 import { fetchThreads } from "@/lib/api";
 import { subscribeToMyThreads } from "@/lib/realtime";
 import { useAuth } from "@/context/AuthContext";
+import { useResponsive } from "@/lib/responsive";
 import type { MessageThread } from "@/types";
 
 export default function Messages() {
   const { profile } = useAuth();
+  const { isDesktop } = useResponsive();
   const [threads, setThreads] = useState<MessageThread[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -35,6 +38,14 @@ export default function Messages() {
     const unsubscribe = subscribeToMyThreads(profile.id, load);
     return unsubscribe;
   }, [profile, load]);
+
+  if (isDesktop) {
+    return (
+      <Screen scroll={false} padded={false} fullBleed>
+        <MessagesDesktopLayout threads={threads} loading={loading} onRefresh={load} />
+      </Screen>
+    );
+  }
 
   return (
     <Screen scroll={false} padded={false}>

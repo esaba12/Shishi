@@ -5,20 +5,17 @@ import { Screen } from "@/components/ui/Screen";
 import { Button } from "@/components/ui/Button";
 import { DesktopLanding } from "@/components/landing/DesktopLanding";
 import { colors, spacing, typography } from "@/constants/theme";
-import { useAuth } from "@/context/AuthContext";
 import { isSupabaseConfigured } from "@/lib/env";
 import { useResponsive } from "@/lib/responsive";
 
 export default function Welcome() {
-  const { continueAsDemoUser } = useAuth();
   const { isDesktop } = useResponsive();
 
   function getStarted() {
     router.push("/(auth)/phone");
   }
   function demo() {
-    continueAsDemoUser();
-    router.replace("/(tabs)");
+    router.push("/(auth)/demo-role");
   }
 
   if (isDesktop) {

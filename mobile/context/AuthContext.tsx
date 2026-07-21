@@ -15,7 +15,10 @@ interface AuthContextValue {
   pendingPhone: string | null;
   requestOtp: (phone: string) => Promise<void>;
   verifyOtp: (phone: string, code: string) => Promise<void>;
-  continueAsDemoUser: () => void;
+  /** `persona` picks which demo profile to load — attendee is the baseline pillar every persona
+   *  gets (Discover/RSVP), "host"/"sponsor" additionally grant that role with matching mock details
+   *  so the relevant screens (host tools, donor feed) aren't empty. Defaults to plain attendee. */
+  continueAsDemoUser: (persona?: Role) => void;
   completeOnboarding: (input: {
     profile: Partial<Profile> & { name: string };
     roles: Role[];
@@ -68,11 +71,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setSession(data.session);
   }
 
-  function continueAsDemoUser() {
+  function continueAsDemoUser(persona: Role = "attendee") {
+    const roles: Role[] = persona === "attendee" ? ["attendee"] : ["attendee", persona];
     setSession({ user: { id: "demo-user" } } as unknown as Session);
-    setProfile(mockProfile);
-    if (mockProfile.roles.includes("host")) setHostDetails(mockHostDetails);
-    if (mockProfile.roles.includes("sponsor")) setSponsorDetails(mockSponsorDetails);
+    setProfile({ ...mockProfile, roles });
+    setHostDetails(roles.includes("host") ? mockHostDetails : null);
+    setSponsorDetails(roles.includes("sponsor") ? mockSponsorDetails : null);
   }
 
   async function completeOnboarding(input: {

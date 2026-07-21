@@ -24,10 +24,9 @@ export const mockProfile: Profile = {
   dietaryPrefs: "Vegetarian",
   interests: ["Hiking", "Startups", "Music"],
   funFact: "I once hiked the entire Israel National Trail.",
-  // Includes "host" and "sponsor" so demo mode can click through the full host loop (create a
-  // dinner, manage RSVPs, edit the potluck checklist) and the sponsor donor feed, without a real
-  // account.
-  roles: ["attendee", "host", "sponsor"],
+  // Base roles; AuthContext.continueAsDemoUser overrides this per the persona picked on
+  // (auth)/demo-role.tsx, so this default is only ever seen if that flow is bypassed somehow.
+  roles: ["attendee"],
   verificationTier: 1,
 };
 
