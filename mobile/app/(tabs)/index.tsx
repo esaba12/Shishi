@@ -16,6 +16,7 @@ import { KOSHER_LEVELS } from "@/constants/options";
 import { t } from "@/lib/i18n";
 import { useResponsive } from "@/lib/responsive";
 import { fetchDinners } from "@/lib/api";
+import { useAuth } from "@/context/AuthContext";
 import type { Dinner } from "@/types";
 import type { KosherLevel } from "@/types/database";
 
@@ -26,6 +27,9 @@ export default function Discover() {
   const [view, setView] = useState<"list" | "map">("list");
   const { show } = useToast();
   const { isDesktop } = useResponsive();
+  const { profile, hostDetails, sponsorDetails } = useAuth();
+  const isHost = profile?.roles.includes("host");
+  const isSponsor = profile?.roles.includes("sponsor");
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -63,6 +67,28 @@ export default function Discover() {
         <Text style={styles.greeting}>{t("discover.greeting")}</Text>
         <Text style={styles.title}>{t("discover.title")}</Text>
         <Text style={styles.subtitle}>{t("discover.subtitle")}</Text>
+
+        {isHost && hostDetails && (
+          <View style={styles.personaCard}>
+            <Text style={styles.personaCardText}>
+              You've hosted {hostDetails.dinnersHostedCount} Shabbats so far.
+            </Text>
+            <Pressable style={styles.personaCardBtn} onPress={() => router.push("/dinner/create")}>
+              <Text style={styles.personaCardBtnText}>Host a new dinner</Text>
+            </Pressable>
+          </View>
+        )}
+        {isSponsor && sponsorDetails && (
+          <View style={styles.personaCard}>
+            <Text style={styles.personaCardText}>
+              Your giving budget is up to ₪{sponsorDetails.budgetCeiling ?? "—"} per dinner.
+            </Text>
+            <Pressable style={styles.personaCardBtn} onPress={() => router.push("/sponsor")}>
+              <Text style={styles.personaCardBtnText}>Browse the donor feed</Text>
+            </Pressable>
+          </View>
+        )}
+
         <View style={styles.chipRow}>
           <Chip label={t("discover.all")} selected={kosherFilter === null} onPress={() => setKosherFilter(null)} />
           {KOSHER_LEVELS.map((k) => (
@@ -145,5 +171,14 @@ const styles = StyleSheet.create({
   title: { ...typography.h1, color: colors.textPrimary, marginTop: 2 },
   subtitle: { ...typography.body, color: colors.textSecondary, marginTop: spacing.xs, marginBottom: spacing.md },
   chipRow: { flexDirection: "row", flexWrap: "wrap" },
+  personaCard: {
+    backgroundColor: colors.brandSoft,
+    borderRadius: radii.lg,
+    padding: spacing.md,
+    marginBottom: spacing.md,
+  },
+  personaCardText: { ...typography.body, color: colors.brandDark, marginBottom: spacing.sm },
+  personaCardBtn: { alignSelf: "flex-start" },
+  personaCardBtnText: { ...typography.bodyBold, color: colors.brand },
   list: { paddingHorizontal: spacing.lg, paddingBottom: spacing.xl, paddingTop: spacing.xs },
 });
