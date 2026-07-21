@@ -3,6 +3,7 @@ import { StyleSheet, Text, View } from "react-native";
 import { router } from "expo-router";
 import { Screen } from "@/components/ui/Screen";
 import { Button } from "@/components/ui/Button";
+import { Logo } from "@/components/brand/Logo";
 import { DesktopLanding } from "@/components/landing/DesktopLanding";
 import { colors, spacing, typography } from "@/constants/theme";
 import { isSupabaseConfigured } from "@/lib/env";
@@ -37,7 +38,9 @@ export default function Welcome() {
   return (
     <Screen scroll={false}>
       <View style={styles.hero}>
-        <Text style={styles.wordmark}>Shishi</Text>
+        <View style={styles.logoWrap}>
+          <Logo size={40} />
+        </View>
         <Text style={styles.tagline}>A seat at the table for every Jew who wants one.</Text>
         <Text style={styles.subtitle}>
           Find a Shabbat table to join, or open your home to someone who needs one.
@@ -57,10 +60,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
   },
-  wordmark: {
-    ...typography.h1,
-    fontSize: 40,
-    color: colors.brand,
+  logoWrap: {
     marginBottom: spacing.md,
   },
   tagline: {
