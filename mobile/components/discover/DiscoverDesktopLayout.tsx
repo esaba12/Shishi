@@ -4,7 +4,7 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { DinnerCardSkeleton } from "@/components/ui/Skeleton";
 import { DinnerCard } from "@/components/DinnerCard";
 import { DinnerMapPane } from "@/components/discover/DinnerMapPane";
-import { colors, spacing } from "@/constants/theme";
+import { colors, elevation, radii, spacing } from "@/constants/theme";
 import { t } from "@/lib/i18n";
 import type { LatLng } from "@/lib/geo";
 import type { Dinner } from "@/types";
@@ -70,13 +70,15 @@ export function DiscoverDesktopLayout({
         )}
       </View>
       <View style={styles.mapColumn}>
-        <DinnerMapPane
-          dinners={dinners}
-          onSelect={onSelect}
-          center={mapCenter}
-          radiusKm={radiusKm}
-          onSearchThisArea={onSearchThisArea}
-        />
+        <View style={styles.mapCard}>
+          <DinnerMapPane
+            dinners={dinners}
+            onSelect={onSelect}
+            center={mapCenter}
+            radiusKm={radiusKm}
+            onSearchThisArea={onSearchThisArea}
+          />
+        </View>
       </View>
     </View>
   );
@@ -90,5 +92,15 @@ const styles = StyleSheet.create({
     borderEndColor: colors.border,
   },
   listContent: { padding: spacing.lg },
-  mapColumn: { flex: 1 },
+  mapColumn: { flex: 1, padding: spacing.lg },
+  // Same card language as DinnerCard (radii.lg, border, elevation.card) — the map is content on the
+  // page like anything else, not a full-bleed background layer, so it gets the same inset treatment.
+  mapCard: {
+    flex: 1,
+    borderRadius: radii.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+    overflow: "hidden",
+    ...elevation.card,
+  },
 });
