@@ -17,11 +17,10 @@ export default function Profile() {
 
   if (!profile) return null;
 
-  // signOut() only clears auth state — it doesn't navigate. Without an explicit redirect the app
-  // just sits on this (now-profile-less) tab instead of returning to the welcome screen.
+  // Navigating away is handled by (tabs)/_layout.tsx's auth guard once signOut() clears the
+  // session — no explicit redirect needed here.
   async function handleSignOut() {
     await signOut();
-    router.replace("/");
   }
 
   return (
