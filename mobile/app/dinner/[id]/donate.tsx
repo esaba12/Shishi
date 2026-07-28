@@ -9,6 +9,7 @@ import { Card } from "@/components/ui/Card";
 import { Avatar } from "@/components/ui/Avatar";
 import { TextField } from "@/components/ui/TextField";
 import { useToast } from "@/components/ui/Toast";
+import { SuccessOverlay } from "@/components/ui/SuccessOverlay";
 import { colors, radii, spacing, typography } from "@/constants/theme";
 import { fetchDinner } from "@/lib/api";
 import { useDonationCheckout } from "@/lib/donationCheckout";
@@ -28,6 +29,7 @@ export default function Donate() {
   const [anonymous, setAnonymous] = useState(false);
   const [message, setMessage] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [showSuccess, setShowSuccess] = useState(false);
 
   useEffect(() => {
     fetchDinner(id).then((d) => {
@@ -62,8 +64,7 @@ export default function Donate() {
         return;
       }
       haptics.success();
-      show("Thank you — your donation is on its way to this dinner.", "success");
-      router.replace(`/dinner/${dinner.id}`);
+      setShowSuccess(true);
     } finally {
       setSubmitting(false);
     }
@@ -143,6 +144,14 @@ export default function Donate() {
 
       <Button label={`Donate ₪${amount || 0}`} onPress={handleDonate} disabled={!canSubmit} loading={submitting} size="lg" />
       {modal}
+      <SuccessOverlay
+        visible={showSuccess}
+        message="Thank you — your donation is on its way to this dinner."
+        onHide={() => {
+          setShowSuccess(false);
+          router.replace(`/dinner/${dinner.id}`);
+        }}
+      />
     </Screen>
   );
 }

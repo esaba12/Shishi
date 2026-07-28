@@ -1,6 +1,8 @@
-import React, { useRef } from "react";
-import { ActivityIndicator, Animated, Pressable, StyleSheet, Text, ViewStyle } from "react-native";
+import React from "react";
+import { ActivityIndicator, Pressable, StyleSheet, Text, ViewStyle } from "react-native";
+import Animated from "react-native-reanimated";
 import { haptics } from "@/lib/haptics";
+import { usePressScale } from "@/lib/usePressScale";
 import { colors, radii, spacing, typography } from "@/constants/theme";
 
 type Variant = "primary" | "secondary" | "ghost" | "danger";
@@ -29,10 +31,7 @@ export function Button({
   style,
 }: ButtonProps) {
   const isDisabled = disabled || loading;
-  const scale = useRef(new Animated.Value(1)).current;
-
-  const spring = (to: number) =>
-    Animated.spring(scale, { toValue: to, useNativeDriver: true, speed: 40, bounciness: 6 }).start();
+  const { style: pressStyle, onPressIn, onPressOut } = usePressScale(0.97);
 
   function handlePress() {
     if (haptic) haptics.impact();
@@ -40,11 +39,11 @@ export function Button({
   }
 
   return (
-    <Animated.View style={{ transform: [{ scale }] }}>
+    <Animated.View style={pressStyle}>
       <Pressable
         onPress={handlePress}
-        onPressIn={() => !isDisabled && spring(0.97)}
-        onPressOut={() => spring(1)}
+        onPressIn={() => !isDisabled && onPressIn()}
+        onPressOut={onPressOut}
         disabled={isDisabled}
         style={[styles.base, sizeStyles[size], variantStyles[variant], isDisabled && styles.disabled, style]}
       >

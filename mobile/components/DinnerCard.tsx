@@ -1,9 +1,11 @@
-import React, { useRef } from "react";
-import { Animated, Pressable, StyleSheet, Text, View } from "react-native";
+import React from "react";
+import { Pressable, StyleSheet, Text, View } from "react-native";
+import Animated from "react-native-reanimated";
 import { Ionicons } from "@expo/vector-icons";
 import { colors, radii, spacing, typography, elevation } from "@/constants/theme";
 import { KOSHER_LEVELS } from "@/constants/options";
 import { t } from "@/lib/i18n";
+import { usePressScale } from "@/lib/usePressScale";
 import { Avatar } from "@/components/ui/Avatar";
 import { Badge } from "@/components/ui/Badge";
 import type { Dinner } from "@/types";
@@ -19,16 +21,14 @@ function formatDate(date: string) {
 export function DinnerCard({ dinner, onPress }: { dinner: Dinner; onPress: () => void }) {
   const kosherLabel = KOSHER_LEVELS.find((k) => k.value === dinner.kosherLevel)?.label ?? "";
   const seatsLeft = dinner.capacity - dinner.seatsTaken;
-  const scale = useRef(new Animated.Value(1)).current;
-  const spring = (to: number) =>
-    Animated.spring(scale, { toValue: to, useNativeDriver: true, speed: 40, bounciness: 5 }).start();
+  const { style: pressStyle, onPressIn, onPressOut } = usePressScale(0.98);
 
   return (
-    <Animated.View style={{ transform: [{ scale }] }}>
+    <Animated.View style={pressStyle}>
       <Pressable
         onPress={onPress}
-        onPressIn={() => spring(0.98)}
-        onPressOut={() => spring(1)}
+        onPressIn={onPressIn}
+        onPressOut={onPressOut}
         style={[styles.card, elevation.card]}
       >
         <View style={styles.headerRow}>

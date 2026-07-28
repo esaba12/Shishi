@@ -1,11 +1,14 @@
 import React from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleProp, StyleSheet, Text, View, ViewStyle } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
+import { MotiView } from "moti";
 import { Ionicons } from "@expo/vector-icons";
 import { Button } from "@/components/ui/Button";
 import { Reveal } from "@/components/ui/Reveal";
 import { Logo, LogoMark } from "@/components/brand/Logo";
+import { GrainOverlay } from "@/components/landing/GrainOverlay";
 import { colors, radii, spacing, typography } from "@/constants/theme";
+import { useReducedMotion } from "@/lib/useReducedMotion";
 import type { Role } from "@/types";
 
 const ROLE_TEASERS: {
@@ -77,12 +80,61 @@ export function DesktopLanding({
 
       <View style={styles.right}>
         <LinearGradient colors={[colors.brandDark, colors.brand]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />
-        <View style={[styles.glow, styles.glowOne]} />
-        <View style={[styles.glow, styles.glowTwo]} />
-        <View style={[styles.glow, styles.glowThree]} />
+        <GrainOverlay style={StyleSheet.absoluteFill} />
+        <Glow style={[styles.glow, styles.glowOne]} driftX={14} driftY={-10} driftScale={1.05} duration={8000} />
+        <Glow style={[styles.glow, styles.glowTwo]} driftX={-10} driftY={12} driftScale={1.06} duration={6500} delay={200} />
+        <Glow style={[styles.glow, styles.glowThree]} driftX={8} driftY={8} driftScale={1.08} duration={9000} delay={400} />
         <LogoMark size={72} style={styles.watermark} />
       </View>
     </View>
+  );
+}
+
+// Ambient drift for the hero's "candlelight" glow circles — a slow, looping translate+scale
+// oscillation, staggered per-glow (different durations/delays) so they don't move in lockstep.
+// Reduced motion keeps the fade-in entrance but skips the loop entirely (static glow).
+function Glow({
+  style,
+  driftX,
+  driftY,
+  driftScale,
+  duration,
+  delay = 0,
+}: {
+  style: StyleProp<ViewStyle>;
+  driftX: number;
+  driftY: number;
+  driftScale: number;
+  duration: number;
+  delay?: number;
+}) {
+  const reducedMotion = useReducedMotion();
+
+  if (reducedMotion) {
+    return (
+      <MotiView
+        pointerEvents="none"
+        style={style}
+        from={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ type: "timing", duration: 300 }}
+      />
+    );
+  }
+
+  return (
+    <MotiView
+      pointerEvents="none"
+      style={style}
+      from={{ opacity: 0, translateX: 0, translateY: 0, scale: 1 }}
+      animate={{ opacity: 1, translateX: driftX, translateY: driftY, scale: driftScale }}
+      transition={{
+        opacity: { type: "timing", duration: 500, delay },
+        translateX: { type: "timing", duration, delay: 500 + delay, loop: true },
+        translateY: { type: "timing", duration: duration * 0.9, delay: 500 + delay, loop: true },
+        scale: { type: "timing", duration: duration * 1.1, delay: 500 + delay, loop: true },
+      }}
+    />
   );
 }
 

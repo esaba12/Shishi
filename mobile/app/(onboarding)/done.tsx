@@ -1,22 +1,19 @@
-import React, { useEffect, useRef, useState } from "react";
-import { ActivityIndicator, Animated, StyleSheet, Text, View } from "react-native";
+import React, { useEffect, useState } from "react";
+import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { Screen } from "@/components/ui/Screen";
 import { Button } from "@/components/ui/Button";
+import { SuccessBurst } from "@/components/ui/SuccessBurst";
 import { LogoMark } from "@/components/brand/Logo";
 import { colors, spacing, typography } from "@/constants/theme";
 import { useOnboarding } from "@/context/OnboardingContext";
 import { useAuth } from "@/context/AuthContext";
-import { useReducedMotion } from "@/lib/useReducedMotion";
 
 export default function OnboardingDone() {
   const { draft } = useOnboarding();
   const { completeOnboarding } = useAuth();
   const [status, setStatus] = useState<"saving" | "error" | "done">("saving");
-  const reducedMotion = useReducedMotion();
-  const scale = useRef(new Animated.Value(0.85)).current;
-  const opacity = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     completeOnboarding({
@@ -29,19 +26,6 @@ export default function OnboardingDone() {
       .catch(() => setStatus("error"));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  useEffect(() => {
-    if (status !== "done") return;
-    if (reducedMotion) {
-      scale.setValue(1);
-      opacity.setValue(1);
-      return;
-    }
-    Animated.parallel([
-      Animated.spring(scale, { toValue: 1, useNativeDriver: true, speed: 10, bounciness: 12 }),
-      Animated.timing(opacity, { toValue: 1, duration: 320, useNativeDriver: true }),
-    ]).start();
-  }, [status, reducedMotion, scale, opacity]);
 
   return (
     <Screen scroll={false}>
@@ -62,9 +46,9 @@ export default function OnboardingDone() {
         )}
         {status === "done" && (
           <>
-            <Animated.View style={{ opacity, transform: [{ scale }] }}>
+            <SuccessBurst>
               <LogoMark size={72} />
-            </Animated.View>
+            </SuccessBurst>
             <Text style={styles.title}>You're in.</Text>
             <Text style={styles.text}>Shabbat shalom — let's find your table.</Text>
             <Button label="Enter Shishi" onPress={() => router.replace("/(tabs)")} size="lg" />

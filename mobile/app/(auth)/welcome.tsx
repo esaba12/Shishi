@@ -3,6 +3,7 @@ import { StyleSheet, Text, View } from "react-native";
 import { router } from "expo-router";
 import { Screen } from "@/components/ui/Screen";
 import { Button } from "@/components/ui/Button";
+import { Reveal } from "@/components/ui/Reveal";
 import { Logo } from "@/components/brand/Logo";
 import { DesktopLanding } from "@/components/landing/DesktopLanding";
 import { colors, spacing, typography } from "@/constants/theme";
@@ -38,19 +39,23 @@ export default function Welcome() {
   return (
     <Screen scroll={false}>
       <View style={styles.hero}>
-        <View style={styles.logoWrap}>
+        <Reveal style={styles.logoWrap}>
           <Logo size={40} />
-        </View>
-        <Text style={styles.tagline}>A seat at the table for every Jew who wants one.</Text>
-        <Text style={styles.subtitle}>
-          Find a Shabbat table to join, or open your home to someone who needs one.
-        </Text>
+        </Reveal>
+        <Reveal delay={30}>
+          <Text style={styles.tagline}>A seat at the table for every Jew who wants one.</Text>
+        </Reveal>
+        <Reveal delay={60}>
+          <Text style={styles.subtitle}>
+            Find a Shabbat table to join, or open your home to someone who needs one.
+          </Text>
+        </Reveal>
       </View>
-      <View style={styles.actions}>
+      <Reveal delay={120} style={styles.actions}>
         <Button label="Get started" onPress={getStarted} />
         {isSupabaseConfigured && <Button label="Log in" variant="secondary" onPress={logIn} />}
         {!isSupabaseConfigured && <Button label="Continue as demo user" variant="ghost" onPress={demo} />}
-      </View>
+      </Reveal>
     </Screen>
   );
 }

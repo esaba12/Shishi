@@ -1,9 +1,11 @@
 import React, { useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
+import { AnimatePresence, MotiView } from "moti";
 import { Ionicons } from "@expo/vector-icons";
 import { DinnerMap } from "@/components/DinnerMap";
 import { colors, elevation, radii, spacing, typography } from "@/constants/theme";
 import { haversineDistanceKm, type LatLng } from "@/lib/geo";
+import { useReducedMotion } from "@/lib/useReducedMotion";
 import type { Dinner } from "@/types";
 
 // How far the map has to be dragged from the applied search center before we bother surfacing
@@ -23,6 +25,7 @@ interface DinnerMapPaneProps {
  *  re-centers the radius filter (owned by the parent) on wherever the map now sits. */
 export function DinnerMapPane({ dinners, onSelect, center, radiusKm, onSearchThisArea }: DinnerMapPaneProps) {
   const [pendingCenter, setPendingCenter] = useState<LatLng | null>(null);
+  const reducedMotion = useReducedMotion();
 
   const showSearchButton =
     radiusKm != null && pendingCenter != null && haversineDistanceKm(pendingCenter, center) > REDO_SEARCH_THRESHOLD_KM;
@@ -36,28 +39,40 @@ export function DinnerMapPane({ dinners, onSelect, center, radiusKm, onSearchThi
         radiusKm={radiusKm}
         onRegionChange={setPendingCenter}
       />
-      {showSearchButton && (
-        <Pressable
-          style={[styles.searchBtn, elevation.raised]}
-          onPress={() => {
-            onSearchThisArea(pendingCenter!);
-            setPendingCenter(null);
-          }}
-        >
-          <Ionicons name="refresh" size={14} color={colors.onBrand} />
-          <Text style={styles.searchBtnText}>Search this area</Text>
-        </Pressable>
-      )}
+      <AnimatePresence>
+        {showSearchButton && (
+          <MotiView
+            style={styles.searchBtnWrap}
+            from={{ opacity: 0, translateY: reducedMotion ? 0 : -8 }}
+            animate={{ opacity: 1, translateY: 0 }}
+            exit={{ opacity: 0, translateY: reducedMotion ? 0 : -8 }}
+            transition={{ type: "timing", duration: reducedMotion ? 0 : 200 }}
+          >
+            <Pressable
+              style={[styles.searchBtn, elevation.raised]}
+              onPress={() => {
+                onSearchThisArea(pendingCenter!);
+                setPendingCenter(null);
+              }}
+            >
+              <Ionicons name="refresh" size={14} color={colors.onBrand} />
+              <Text style={styles.searchBtnText}>Search this area</Text>
+            </Pressable>
+          </MotiView>
+        )}
+      </AnimatePresence>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   pane: { flex: 1 },
-  searchBtn: {
+  searchBtnWrap: {
     position: "absolute",
     top: spacing.md,
     alignSelf: "center",
+  },
+  searchBtn: {
     flexDirection: "row",
     alignItems: "center",
     gap: 6,

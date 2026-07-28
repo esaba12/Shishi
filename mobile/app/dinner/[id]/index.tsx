@@ -13,6 +13,7 @@ import { Badge } from "@/components/ui/Badge";
 import { TextField } from "@/components/ui/TextField";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { useToast } from "@/components/ui/Toast";
+import { SuccessOverlay } from "@/components/ui/SuccessOverlay";
 import { colors, radii, spacing, typography, elevation } from "@/constants/theme";
 import { KOSHER_LEVELS } from "@/constants/options";
 import { t } from "@/lib/i18n";
@@ -52,6 +53,7 @@ export default function DinnerDetail() {
   const [potluckItems, setPotluckItems] = useState<PotluckItem[]>([]);
   const [revealedAddress, setRevealedAddress] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
   const load = useCallback(async () => {
@@ -104,9 +106,8 @@ export default function DinnerDetail() {
         autoApprove: dinner.approvalMode === "auto_accept",
       });
       haptics.success();
-      show(
-        dinner.approvalMode === "auto_accept" ? "You're in — see you Friday!" : "Request sent to the host.",
-        "success"
+      setSuccessMessage(
+        dinner.approvalMode === "auto_accept" ? "You're in — see you Friday!" : "Request sent to the host."
       );
       await load();
     } catch {
@@ -278,6 +279,11 @@ export default function DinnerDetail() {
           </View>
         </View>
       ) : null}
+      <SuccessOverlay
+        visible={!!successMessage}
+        message={successMessage ?? ""}
+        onHide={() => setSuccessMessage(null)}
+      />
     </SafeAreaView>
   );
 }
