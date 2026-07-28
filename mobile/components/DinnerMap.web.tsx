@@ -1,6 +1,6 @@
 import React, { useEffect } from "react";
 import { View } from "react-native";
-import { Circle, MapContainer, Marker, Popup, TileLayer, useMapEvents } from "react-leaflet";
+import { Circle, MapContainer, Marker, Popup, TileLayer, useMap, useMapEvents } from "react-leaflet";
 import L from "leaflet";
 import { TEL_AVIV_REGION, pseudoCoordsForDinner, type LatLng } from "@/lib/geo";
 import { colors } from "@/constants/theme";
@@ -48,6 +48,38 @@ function CenterTracker({ onChange }: { onChange: (center: LatLng) => void }) {
   return null;
 }
 
+/** MapContainer's `center`/`zoom` props only apply on first mount — react-leaflet doesn't reactively
+ *  re-center the map when they change on a later render (a well-known gotcha). Without this, the map
+ *  sits frozen on its initial Tel-Aviv-wide view regardless of which dinners are actually being
+ *  shown, which reads as "poorly framed" (lots of empty map around a tight little cluster of pins).
+ *  This fits the view to wherever the current dinners actually are instead. */
+function FitToDinners({ dinners, fallbackCenter }: { dinners: Dinner[]; fallbackCenter: LatLng }) {
+  const map = useMap();
+  const dinnerKey = dinners.map((d) => d.id).join(",");
+
+  useEffect(() => {
+    if (dinners.length === 0) {
+      map.setView([fallbackCenter.latitude, fallbackCenter.longitude], 13);
+      return;
+    }
+    if (dinners.length === 1) {
+      const c = pseudoCoordsForDinner(dinners[0]);
+      map.setView([c.latitude, c.longitude], 14);
+      return;
+    }
+    const bounds = L.latLngBounds(
+      dinners.map((d) => {
+        const c = pseudoCoordsForDinner(d);
+        return [c.latitude, c.longitude] as [number, number];
+      })
+    );
+    map.fitBounds(bounds, { padding: [48, 48], maxZoom: 15 });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dinnerKey, map]);
+
+  return null;
+}
+
 interface DinnerMapProps {
   dinners: Dinner[];
   onSelect: (id: string) => void;
@@ -74,6 +106,7 @@ export function DinnerMap({ dinners, onSelect, center, radiusKm, onRegionChange 
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         />
         {onRegionChange && <CenterTracker onChange={onRegionChange} />}
+        <FitToDinners dinners={dinners} fallbackCenter={center ?? TEL_AVIV_REGION} />
         {center && radiusKm != null && (
           <Circle
             center={[center.latitude, center.longitude]}
