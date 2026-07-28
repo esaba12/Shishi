@@ -1,5 +1,6 @@
-import React, { useEffect, useRef } from "react";
-import { Animated, DimensionValue, StyleSheet, View, ViewStyle } from "react-native";
+import React, { useEffect } from "react";
+import { DimensionValue, StyleSheet, View, ViewStyle } from "react-native";
+import Animated, { cancelAnimation, useAnimatedStyle, useSharedValue, withRepeat, withTiming } from "react-native-reanimated";
 import { colors, radii, spacing } from "@/constants/theme";
 import { Card } from "./Card";
 
@@ -10,24 +11,20 @@ interface SkeletonProps {
   style?: ViewStyle;
 }
 
-/** A single pulsing placeholder block. Uses the built-in Animated API (no Reanimated dependency). */
+/** A single pulsing placeholder block, animated on the UI thread via Reanimated. */
 export function Skeleton({ width = "100%", height = 14, radius = radii.sm, style }: SkeletonProps) {
-  const opacity = useRef(new Animated.Value(0.5)).current;
+  const opacity = useSharedValue(0.5);
 
   useEffect(() => {
-    const loop = Animated.loop(
-      Animated.sequence([
-        Animated.timing(opacity, { toValue: 1, duration: 700, useNativeDriver: true }),
-        Animated.timing(opacity, { toValue: 0.5, duration: 700, useNativeDriver: true }),
-      ])
-    );
-    loop.start();
-    return () => loop.stop();
+    opacity.value = withRepeat(withTiming(1, { duration: 700 }), -1, true);
+    return () => cancelAnimation(opacity);
   }, [opacity]);
+
+  const animatedStyle = useAnimatedStyle(() => ({ opacity: opacity.value }));
 
   return (
     <Animated.View
-      style={[{ width, height, borderRadius: radius, backgroundColor: colors.surfaceMuted, opacity }, style]}
+      style={[{ width, height, borderRadius: radius, backgroundColor: colors.surfaceMuted }, animatedStyle, style]}
     />
   );
 }

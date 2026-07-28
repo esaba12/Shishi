@@ -1,5 +1,6 @@
-import React, { useEffect, useRef } from "react";
-import { Animated, ViewStyle } from "react-native";
+import React, { useEffect } from "react";
+import { ViewStyle } from "react-native";
+import Animated, { interpolate, useAnimatedStyle, useSharedValue, withDelay, withTiming } from "react-native-reanimated";
 import { useReducedMotion } from "@/lib/useReducedMotion";
 
 interface RevealProps {
@@ -12,28 +13,23 @@ interface RevealProps {
 // content (e.g. heading, then each option card in turn) rather than animating everything at once.
 export function Reveal({ children, delay = 0, style }: RevealProps) {
   const reducedMotion = useReducedMotion();
-  const progress = useRef(new Animated.Value(reducedMotion ? 1 : 0)).current;
+  const progress = useSharedValue(reducedMotion ? 1 : 0);
 
   useEffect(() => {
     if (reducedMotion) {
-      progress.setValue(1);
+      progress.value = 1;
       return;
     }
-    const anim = Animated.timing(progress, { toValue: 1, duration: 420, delay, useNativeDriver: true });
-    anim.start();
-    return () => anim.stop();
+    progress.value = withDelay(delay, withTiming(1, { duration: 420 }));
   }, [progress, delay, reducedMotion]);
 
+  const animatedStyle = useAnimatedStyle(() => ({
+    opacity: progress.value,
+    transform: [{ translateY: interpolate(progress.value, [0, 1], [14, 0]) }],
+  }));
+
   return (
-    <Animated.View
-      style={[
-        {
-          opacity: progress,
-          transform: [{ translateY: progress.interpolate({ inputRange: [0, 1], outputRange: [14, 0] }) }],
-        },
-        style,
-      ]}
-    >
+    <Animated.View style={[animatedStyle, style]}>
       {children}
     </Animated.View>
   );

@@ -1,5 +1,6 @@
 import React, { createContext, useCallback, useContext, useMemo, useRef, useState } from "react";
-import { Animated, StyleSheet, Text, View, ViewStyle } from "react-native";
+import { StyleSheet, Text, View, ViewStyle } from "react-native";
+import Animated, { runOnJS, useAnimatedStyle, useSharedValue, withSpring, withTiming } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { colors, radii, spacing, typography, elevation } from "@/constants/theme";
@@ -19,30 +20,32 @@ const ToastContext = createContext<ToastContextValue>({ show: () => {} });
 /** Imperative toast — `const { show } = useToast(); show("Couldn't load dinners", "error")`. */
 export const useToast = () => useContext(ToastContext);
 
+// Slide-in spring is slower/softer than the UI's press-scale spring (see lib/usePressScale.ts) — a
+// toast arriving should feel like it's settling in, not snapping like a button press.
+const SLIDE_IN_SPRING = { damping: 16, stiffness: 180 } as const;
+
 export function ToastProvider({ children }: { children: React.ReactNode }) {
   const [toast, setToast] = useState<ToastState | null>(null);
-  const translateY = useRef(new Animated.Value(120)).current;
-  const opacity = useRef(new Animated.Value(0)).current;
+  const translateY = useSharedValue(120);
+  const opacity = useSharedValue(0);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const insets = useSafeAreaInsets();
 
   const hide = useCallback(() => {
-    Animated.parallel([
-      Animated.timing(translateY, { toValue: 120, duration: 200, useNativeDriver: true }),
-      Animated.timing(opacity, { toValue: 0, duration: 200, useNativeDriver: true }),
-    ]).start(() => setToast(null));
+    translateY.value = withTiming(120, { duration: 200 });
+    opacity.value = withTiming(0, { duration: 200 }, (finished) => {
+      if (finished) runOnJS(setToast)(null);
+    });
   }, [opacity, translateY]);
 
   const show = useCallback(
     (message: string, tone: Tone = "info") => {
       if (timer.current) clearTimeout(timer.current);
       setToast({ message, tone });
-      translateY.setValue(120);
-      opacity.setValue(0);
-      Animated.parallel([
-        Animated.spring(translateY, { toValue: 0, useNativeDriver: true, speed: 18, bounciness: 6 }),
-        Animated.timing(opacity, { toValue: 1, duration: 200, useNativeDriver: true }),
-      ]).start();
+      translateY.value = 120;
+      opacity.value = 0;
+      translateY.value = withSpring(0, SLIDE_IN_SPRING);
+      opacity.value = withTiming(1, { duration: 200 });
       timer.current = setTimeout(hide, 3200);
     },
     [hide, opacity, translateY]
@@ -50,16 +53,18 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
 
   const value = useMemo(() => ({ show }), [show]);
 
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: translateY.value }],
+    opacity: opacity.value,
+  }));
+
   return (
     <ToastContext.Provider value={value}>
       {children}
       {toast ? (
         <Animated.View
           pointerEvents="box-none"
-          style={[
-            styles.wrap,
-            { bottom: insets.bottom + spacing.lg, transform: [{ translateY }], opacity },
-          ]}
+          style={[styles.wrap, { bottom: insets.bottom + spacing.lg }, animatedStyle]}
         >
           <View style={[styles.toast, toneStyles[toast.tone], elevation.overlay]}>
             <Ionicons name={icons[toast.tone]} size={18} color={colors.onBrand} style={styles.icon} />

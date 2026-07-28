@@ -73,6 +73,7 @@ export const en = {
     chargeNotice: "You won't be charged until your seat is confirmed.",
     demoNotice: "Demo mode: no Stripe key configured yet, so this simulates a successful payment.",
     failed: "Payment failed, please try again.",
+    confirmed: "You're confirmed for %{host}'s Shabbat!",
   },
 };
 

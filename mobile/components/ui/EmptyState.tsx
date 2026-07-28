@@ -3,6 +3,7 @@ import { StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { colors, radii, spacing, typography } from "@/constants/theme";
 import { Button } from "./Button";
+import { Reveal } from "./Reveal";
 
 interface EmptyStateProps {
   title: string;
@@ -14,7 +15,7 @@ interface EmptyStateProps {
 
 export function EmptyState({ title, description, icon, actionLabel, onAction }: EmptyStateProps) {
   return (
-    <View style={styles.wrapper}>
+    <Reveal style={styles.wrapper}>
       {icon ? (
         <View style={styles.iconCircle}>
           <Ionicons name={icon} size={30} color={colors.brand} />
@@ -25,7 +26,7 @@ export function EmptyState({ title, description, icon, actionLabel, onAction }: 
       {actionLabel && onAction ? (
         <Button label={actionLabel} onPress={onAction} variant="secondary" size="sm" style={styles.action} />
       ) : null}
-    </View>
+    </Reveal>
   );
 }
 

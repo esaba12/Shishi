@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Avatar } from "@/components/ui/Avatar";
 import { useToast } from "@/components/ui/Toast";
+import { SuccessOverlay } from "@/components/ui/SuccessOverlay";
 import { colors, radii, spacing, typography } from "@/constants/theme";
 import { t } from "@/lib/i18n";
 import { createRsvp, fetchDinner } from "@/lib/api";
@@ -32,6 +33,7 @@ export default function Checkout() {
   const { pay, modal } = useDinnerCheckout();
   const [dinner, setDinner] = useState<Dinner | null>(null);
   const [loading, setLoading] = useState(false);
+  const [showSuccess, setShowSuccess] = useState(false);
 
   useEffect(() => {
     fetchDinner(id).then(setDinner).catch(() => show("Couldn't load this dinner.", "error"));
@@ -44,7 +46,7 @@ export default function Checkout() {
       autoApprove: dinner.approvalMode === "auto_accept",
     });
     haptics.success();
-    router.replace(`/dinner/${dinner.id}`);
+    setShowSuccess(true);
   }
 
   async function handlePay() {
@@ -102,6 +104,15 @@ export default function Checkout() {
 
       <Button label={t("checkout.pay", { amount: dinner.costPerHead })} onPress={handlePay} loading={loading} size="lg" />
       {modal}
+      <SuccessOverlay
+        visible={showSuccess}
+        message={t("checkout.confirmed", { host: dinner.hostName })}
+        duration={650}
+        onHide={() => {
+          setShowSuccess(false);
+          router.replace(`/dinner/${dinner.id}`);
+        }}
+      />
     </Screen>
   );
 }

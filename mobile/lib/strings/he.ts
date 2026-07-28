@@ -75,5 +75,6 @@ export const he: Strings = {
     chargeNotice: "לא תחויבו עד שהמקום שלכם יאושר.",
     demoNotice: "מצב הדגמה: אין עדיין מפתח Stripe, ולכן זו סימולציה של תשלום מוצלח.",
     failed: "התשלום נכשל, נסו שוב.",
+    confirmed: "מקומכם אושר לשבת של %{host}!",
   },
 };

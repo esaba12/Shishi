@@ -1,9 +1,11 @@
-import React, { useEffect, useRef } from "react";
-import { Animated, Pressable, StyleSheet, Text, View, ViewStyle } from "react-native";
+import React, { useEffect } from "react";
+import { Pressable, StyleSheet, Text, View, ViewStyle } from "react-native";
+import Animated, { interpolate, useAnimatedStyle, useSharedValue, withSpring, withTiming } from "react-native-reanimated";
 import { Ionicons } from "@expo/vector-icons";
 import { colors, radii, spacing, typography } from "@/constants/theme";
 import { haptics } from "@/lib/haptics";
 import { useReducedMotion } from "@/lib/useReducedMotion";
+import { usePressScale } from "@/lib/usePressScale";
 import { Badge } from "./Badge";
 
 interface SelectCardProps {
@@ -21,49 +23,46 @@ interface SelectCardProps {
 // echoing the brand's candlelight motif rather than a generic tick.
 export function SelectCard({ title, description, icon, selected, onPress, badge, style }: SelectCardProps) {
   const reducedMotion = useReducedMotion();
-  const scale = useRef(new Animated.Value(1)).current;
-  const glow = useRef(new Animated.Value(selected ? 1 : 0)).current;
-  const check = useRef(new Animated.Value(selected ? 1 : 0)).current;
+  const { style: pressStyle, onPressIn, onPressOut } = usePressScale(0.98);
+  const glow = useSharedValue(selected ? 1 : 0);
+  const check = useSharedValue(selected ? 1 : 0);
 
   useEffect(() => {
     if (reducedMotion) {
-      glow.setValue(selected ? 1 : 0);
-      check.setValue(selected ? 1 : 0);
+      glow.value = selected ? 1 : 0;
+      check.value = selected ? 1 : 0;
       return;
     }
-    Animated.timing(glow, { toValue: selected ? 1 : 0, duration: 280, useNativeDriver: true }).start();
-    Animated.spring(check, {
-      toValue: selected ? 1 : 0,
-      useNativeDriver: true,
-      speed: 24,
-      bounciness: selected ? 10 : 0,
-    }).start();
+    glow.value = withTiming(selected ? 1 : 0, { duration: 280 });
+    // Bounces in on select, settles cleanly on deselect — mirrors the original
+    // `bounciness: selected ? 10 : 0` asymmetry, translated to Reanimated's damping/stiffness model.
+    check.value = withSpring(
+      selected ? 1 : 0,
+      selected ? { damping: 10, stiffness: 200 } : { damping: 26, stiffness: 220 }
+    );
   }, [selected, glow, check, reducedMotion]);
-
-  const spring = (to: number) =>
-    Animated.spring(scale, { toValue: to, useNativeDriver: true, speed: 40, bounciness: 6 }).start();
 
   function handlePress() {
     haptics.impact();
     onPress();
   }
 
+  const glowStyle = useAnimatedStyle(() => ({
+    opacity: glow.value,
+    transform: [{ scale: interpolate(glow.value, [0, 1], [0.94, 1]) }],
+  }));
+  const checkStyle = useAnimatedStyle(() => ({
+    opacity: check.value,
+    transform: [{ scale: check.value }],
+  }));
+
   return (
-    <Animated.View style={[styles.wrapper, { transform: [{ scale }] }, style]}>
-      <Animated.View
-        pointerEvents="none"
-        style={[
-          styles.glow,
-          {
-            opacity: glow,
-            transform: [{ scale: glow.interpolate({ inputRange: [0, 1], outputRange: [0.94, 1] }) }],
-          },
-        ]}
-      />
+    <Animated.View style={[styles.wrapper, pressStyle, style]}>
+      <Animated.View pointerEvents="none" style={[styles.glow, glowStyle]} />
       <Pressable
         onPress={handlePress}
-        onPressIn={() => spring(0.98)}
-        onPressOut={() => spring(1)}
+        onPressIn={onPressIn}
+        onPressOut={onPressOut}
         style={[styles.card, selected && styles.cardSelected]}
       >
         <View style={[styles.iconWrap, selected && styles.iconWrapSelected]}>
@@ -77,7 +76,7 @@ export function SelectCard({ title, description, icon, selected, onPress, badge,
           <Text style={styles.description}>{description}</Text>
         </View>
         <View style={[styles.checkbox, selected && styles.checkboxSelected]}>
-          <Animated.View style={{ opacity: check, transform: [{ scale: check }] }}>
+          <Animated.View style={checkStyle}>
             <Ionicons name="checkmark" size={14} color={colors.onBrand} />
           </Animated.View>
         </View>

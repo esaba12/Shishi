@@ -1,7 +1,10 @@
-import React, { useRef } from "react";
-import { Animated, Pressable, StyleSheet, Text, View } from "react-native";
+import React, { useEffect } from "react";
+import { Pressable, StyleSheet, Text, View } from "react-native";
+import Animated, { useAnimatedStyle, useSharedValue, withTiming } from "react-native-reanimated";
 import { Ionicons } from "@expo/vector-icons";
 import { colors, radii, spacing, typography, elevation } from "@/constants/theme";
+import { useReducedMotion } from "@/lib/useReducedMotion";
+import { usePressScale } from "@/lib/usePressScale";
 import { Avatar } from "@/components/ui/Avatar";
 import { Badge } from "@/components/ui/Badge";
 import type { Dinner } from "@/types";
@@ -18,20 +21,27 @@ function formatDate(date: string) {
  *  of seats-left, since a sponsor's decision is "how much of this budget do I want to cover," not
  *  "is there room for me." */
 export function SponsorDinnerCard({ dinner, onPress }: { dinner: Dinner; onPress: () => void }) {
-  const scale = useRef(new Animated.Value(1)).current;
-  const spring = (to: number) =>
-    Animated.spring(scale, { toValue: to, useNativeDriver: true, speed: 40, bounciness: 5 }).start();
+  const { style: pressStyle, onPressIn, onPressOut } = usePressScale(0.98);
+  const reducedMotion = useReducedMotion();
 
   const budget = dinner.budgetNeeded ?? 0;
   const progress = budget > 0 ? Math.min(1, dinner.amountFunded / budget) : 0;
   const remaining = Math.max(0, budget - dinner.amountFunded);
 
+  // Fills in from 0 on mount/update rather than rendering at final width, so a sponsor sees how much
+  // of a dinner's budget their contribution (or others') actually moved the needle.
+  const fill = useSharedValue(reducedMotion ? progress : 0);
+  useEffect(() => {
+    fill.value = reducedMotion ? progress : withTiming(progress, { duration: 600 });
+  }, [progress, reducedMotion, fill]);
+  const fillStyle = useAnimatedStyle(() => ({ width: `${fill.value * 100}%` }));
+
   return (
-    <Animated.View style={{ transform: [{ scale }] }}>
+    <Animated.View style={pressStyle}>
       <Pressable
         onPress={onPress}
-        onPressIn={() => spring(0.98)}
-        onPressOut={() => spring(1)}
+        onPressIn={onPressIn}
+        onPressOut={onPressOut}
         style={[styles.card, elevation.card]}
       >
         <View style={styles.headerRow}>
@@ -59,7 +69,7 @@ export function SponsorDinnerCard({ dinner, onPress }: { dinner: Dinner; onPress
         )}
 
         <View style={styles.progressTrack}>
-          <View style={[styles.progressFill, { width: `${progress * 100}%` }]} />
+          <Animated.View style={[styles.progressFill, fillStyle]} />
         </View>
         <View style={styles.fundingRow}>
           <Text style={styles.fundingRaised}>
