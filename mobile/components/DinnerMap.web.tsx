@@ -37,6 +37,27 @@ const markerIcon = L.icon({
   shadowSize: [41, 41],
 });
 
+/** Leaflet measures its container once, at mount. If that size isn't final yet — the flex layout
+ *  around it is still settling, the tab/pane wasn't visible yet, or the window gets resized/rotated
+ *  afterward — it never re-measures on its own, and the map renders squashed into a corner with the
+ *  rest of its allocated space blank. invalidateSize() forces a re-measure; call it once after mount
+ *  (deferred a frame so layout has settled) and again on every window resize. */
+function ResizeHandler() {
+  const map = useMap();
+
+  useEffect(() => {
+    const id = requestAnimationFrame(() => map.invalidateSize());
+    const onResize = () => map.invalidateSize();
+    window.addEventListener("resize", onResize);
+    return () => {
+      cancelAnimationFrame(id);
+      window.removeEventListener("resize", onResize);
+    };
+  }, [map]);
+
+  return null;
+}
+
 /** Must render as a child of MapContainer — useMapEvents only works inside the Leaflet context. */
 function CenterTracker({ onChange }: { onChange: (center: LatLng) => void }) {
   useMapEvents({
@@ -105,6 +126,7 @@ export function DinnerMap({ dinners, onSelect, center, radiusKm, onRegionChange 
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         />
+        <ResizeHandler />
         {onRegionChange && <CenterTracker onChange={onRegionChange} />}
         <FitToDinners dinners={dinners} fallbackCenter={center ?? TEL_AVIV_REGION} />
         {center && radiusKm != null && (
