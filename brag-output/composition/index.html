@@ -1,0 +1,1026 @@
+<!doctype html>
+<html lang="en" data-resolution="landscape">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1920, height=1080" />
+    <title>Shishi — A seat at the table</title>
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+    <style>
+      @font-face {
+        font-family: "Frank Ruhl Libre";
+        font-style: normal;
+        font-weight: 500;
+        src: url("assets/fonts/Frank-Ruhl-Libre-500-latin.woff2") format("woff2");
+      }
+      @font-face {
+        font-family: "Frank Ruhl Libre";
+        font-style: normal;
+        font-weight: 500;
+        unicode-range: U+0590-05FF, U+FB1D-FB4F;
+        src: url("assets/fonts/Frank-Ruhl-Libre-500-hebrew.woff2") format("woff2");
+      }
+      @font-face {
+        font-family: "Frank Ruhl Libre";
+        font-style: normal;
+        font-weight: 700;
+        src: url("assets/fonts/Frank-Ruhl-Libre-700-latin.woff2") format("woff2");
+      }
+      @font-face {
+        font-family: "Frank Ruhl Libre";
+        font-style: normal;
+        font-weight: 700;
+        unicode-range: U+0590-05FF, U+FB1D-FB4F;
+        src: url("assets/fonts/Frank-Ruhl-Libre-700-hebrew.woff2") format("woff2");
+      }
+      @font-face {
+        font-family: "Frank Ruhl Libre";
+        font-style: normal;
+        font-weight: 900;
+        src: url("assets/fonts/Frank-Ruhl-Libre-900-latin.woff2") format("woff2");
+      }
+      @font-face {
+        font-family: "Frank Ruhl Libre";
+        font-style: normal;
+        font-weight: 900;
+        unicode-range: U+0590-05FF, U+FB1D-FB4F;
+        src: url("assets/fonts/Frank-Ruhl-Libre-900-hebrew.woff2") format("woff2");
+      }
+      @font-face {
+        font-family: "Rubik";
+        font-style: normal;
+        font-weight: 400;
+        src: url("assets/fonts/Rubik-400-latin.woff2") format("woff2");
+      }
+      @font-face {
+        font-family: "Rubik";
+        font-style: normal;
+        font-weight: 500;
+        src: url("assets/fonts/Rubik-500-latin.woff2") format("woff2");
+      }
+      @font-face {
+        font-family: "Rubik";
+        font-style: normal;
+        font-weight: 600;
+        src: url("assets/fonts/Rubik-600-latin.woff2") format("woff2");
+      }
+      @font-face {
+        font-family: "Rubik";
+        font-style: normal;
+        font-weight: 700;
+        src: url("assets/fonts/Rubik-700-latin.woff2") format("woff2");
+      }
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        width: 1920px;
+        height: 1080px;
+        overflow: hidden;
+        background: #000;
+      }
+      body {
+        font-family: "Rubik", "Helvetica Neue", sans-serif;
+      }
+
+      #root {
+        position: relative;
+        width: 1920px;
+        height: 1080px;
+        overflow: hidden;
+      }
+
+      /* ---------- scene shell ---------- */
+      .scene {
+        position: absolute;
+        inset: 0;
+        width: 1920px;
+        height: 1080px;
+        overflow: hidden;
+      }
+      #scene-hook {
+        z-index: 1;
+        background: linear-gradient(135deg, #9f1239 0%, #e11d48 100%);
+      }
+      #scene-roles {
+        z-index: 2;
+        background: #fff7f9;
+        opacity: 0;
+      }
+      #scene-discover {
+        z-index: 3;
+        background: #fff7f9;
+        opacity: 0;
+      }
+      #scene-finale {
+        z-index: 4;
+        background: #fff7f9;
+        opacity: 0;
+      }
+
+      /* ---------- shared texture / depth ---------- */
+      .grain {
+        position: absolute;
+        inset: -40px;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+        background-size: 180px 180px;
+        mix-blend-mode: overlay;
+        pointer-events: none;
+      }
+      .grain-dark {
+        opacity: 0.05;
+      }
+      .grain-light {
+        opacity: 0.035;
+      }
+      .ghost {
+        position: absolute;
+        font-family: "Frank Ruhl Libre", Georgia, serif;
+        font-weight: 900;
+        line-height: 1;
+        pointer-events: none;
+        white-space: nowrap;
+        transform-origin: 50% 50%;
+      }
+      .center-col {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+      }
+      .glow {
+        position: absolute;
+        border-radius: 50%;
+        background: radial-gradient(circle, rgba(255, 225, 234, 0.55) 0%, rgba(255, 225, 234, 0) 70%);
+        pointer-events: none;
+      }
+      .mark-badge {
+        width: 132px;
+        height: 132px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.14);
+        border: 2px solid rgba(255, 255, 255, 0.55);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: "Frank Ruhl Libre", Georgia, serif;
+        font-weight: 700;
+        font-size: 72px;
+        color: #ffffff;
+        transform-origin: 50% 50%;
+      }
+      .eyebrow {
+        font-family: "Rubik", "Helvetica Neue", sans-serif;
+        font-weight: 600;
+        font-size: 28px;
+        letter-spacing: 6px;
+        color: rgba(255, 255, 255, 0.86);
+        text-transform: uppercase;
+      }
+      .rule {
+        height: 3px;
+        background: rgba(255, 255, 255, 0.6);
+        transform: scaleX(0);
+        transform-origin: 50% 50%;
+      }
+      .rule-dark {
+        background: #e11d48;
+      }
+      .wordmark {
+        font-family: "Frank Ruhl Libre", Georgia, serif;
+        font-weight: 900;
+        font-size: 148px;
+        color: #ffffff;
+        letter-spacing: -1px;
+        line-height: 1;
+      }
+      .tagline {
+        font-family: "Frank Ruhl Libre", Georgia, serif;
+        font-weight: 500;
+        font-size: 46px;
+        color: #ffffff;
+        text-align: center;
+        max-width: 1180px;
+        line-height: 1.3;
+      }
+      .footer-label {
+        position: absolute;
+        bottom: 70px;
+        font-family: "Rubik", sans-serif;
+        font-weight: 600;
+        font-size: 22px;
+        letter-spacing: 3px;
+        text-transform: uppercase;
+        color: #ffffff;
+        text-shadow: 0 2px 14px rgba(58, 10, 26, 0.55);
+      }
+      .footer-left {
+        left: 90px;
+      }
+      .footer-right {
+        right: 90px;
+      }
+
+      /* ---------- scene 2: roles ---------- */
+      .roles-topbar {
+        position: absolute;
+        top: 84px;
+        left: 180px;
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+      }
+      .roles-tag {
+        font-family: "Rubik", sans-serif;
+        font-weight: 600;
+        font-size: 22px;
+        letter-spacing: 4px;
+        text-transform: uppercase;
+        color: #df1d47;
+        transform-origin: 0% 50%;
+      }
+      .roles-tag-rule {
+        width: 96px;
+      }
+      .roles-ghost {
+        top: -180px;
+        right: -60px;
+        font-size: 900px;
+        color: #e11d48;
+        opacity: 0.09;
+      }
+      .roles-headline {
+        font-family: "Frank Ruhl Libre", Georgia, serif;
+        font-weight: 700;
+        font-size: 68px;
+        color: #241419;
+        margin-bottom: 28px;
+        transform-origin: 0% 50%;
+      }
+      .roles-divider {
+        width: 220px;
+        margin-bottom: 56px;
+      }
+      .roles-stack {
+        display: flex;
+        flex-direction: column;
+        gap: 30px;
+        width: 1560px;
+      }
+      .role-card {
+        display: flex;
+        align-items: center;
+        gap: 32px;
+        background: #ffffff;
+        border: 2px solid #ffe1ea;
+        border-radius: 30px;
+        padding: 42px 52px;
+        box-shadow: 0 16px 40px rgba(122, 21, 51, 0.09);
+        transform-origin: 50% 50%;
+      }
+      .role-icon {
+        width: 84px;
+        height: 84px;
+        min-width: 84px;
+        border-radius: 50%;
+        background: #e11d48;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 42px;
+        transform-origin: 50% 50%;
+      }
+      .role-copy {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+      .role-title {
+        font-family: "Rubik", sans-serif;
+        font-weight: 600;
+        font-size: 38px;
+        color: #241419;
+      }
+      .role-sub {
+        font-family: "Rubik", sans-serif;
+        font-weight: 400;
+        font-size: 26px;
+        color: #6b535a;
+      }
+      .role-check {
+        margin-left: auto;
+        width: 52px;
+        height: 52px;
+        min-width: 52px;
+        border-radius: 50%;
+        background: #e11d48;
+        color: #ffffff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 27px;
+        font-weight: 700;
+        transform: scale(0);
+        transform-origin: 50% 50%;
+      }
+
+      /* ---------- scene 3: discover + confirm ---------- */
+      #discover-view,
+      #confirmed-view {
+        position: absolute;
+        inset: 0;
+      }
+      #confirmed-view {
+        opacity: 0;
+      }
+      .discover-ghost {
+        top: 40px;
+        left: -140px;
+        font-size: 640px;
+        color: #e11d48;
+        opacity: 0.07;
+      }
+      .discover-header {
+        position: absolute;
+        top: 84px;
+        left: 160px;
+        right: 160px;
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+      }
+      .discover-heading {
+        font-family: "Frank Ruhl Libre", Georgia, serif;
+        font-weight: 700;
+        font-size: 50px;
+        color: #241419;
+        transform-origin: 0% 50%;
+      }
+      .discover-tag {
+        font-family: "Rubik", sans-serif;
+        font-weight: 600;
+        font-size: 22px;
+        letter-spacing: 3px;
+        text-transform: uppercase;
+        color: #df1d47;
+        transform-origin: 100% 50%;
+      }
+      .discover-header-rule {
+        position: absolute;
+        top: 168px;
+        left: 160px;
+        width: 1600px;
+      }
+      .discover-row {
+        position: absolute;
+        top: 250px;
+        left: 160px;
+        right: 160px;
+        display: flex;
+        gap: 40px;
+        align-items: flex-start;
+      }
+      .dinner-card {
+        position: relative;
+        width: 820px;
+        background: #ffffff;
+        border-radius: 30px;
+        padding: 46px 50px;
+        box-shadow: 0 18px 44px rgba(122, 21, 51, 0.11);
+        transform-origin: 50% 50%;
+      }
+      .dinner-head {
+        display: flex;
+        align-items: center;
+        gap: 22px;
+        margin-bottom: 24px;
+      }
+      .avatar {
+        width: 80px;
+        height: 80px;
+        min-width: 80px;
+        border-radius: 50%;
+        background: #e11d48;
+        color: #ffffff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: "Frank Ruhl Libre", serif;
+        font-weight: 700;
+        font-size: 36px;
+      }
+      .dinner-host {
+        font-family: "Rubik", sans-serif;
+        font-weight: 600;
+        font-size: 32px;
+        color: #241419;
+      }
+      .dinner-hosted {
+        font-family: "Rubik", sans-serif;
+        font-weight: 500;
+        font-size: 21px;
+        color: #e11d48;
+        margin-top: 4px;
+      }
+      .dinner-desc {
+        font-family: "Rubik", sans-serif;
+        font-weight: 400;
+        font-size: 26px;
+        color: #241419;
+        margin-bottom: 26px;
+      }
+      .dinner-meta {
+        display: flex;
+        gap: 30px;
+        font-family: "Rubik", sans-serif;
+        font-weight: 400;
+        font-size: 22px;
+        color: #6b535a;
+        margin-bottom: 24px;
+      }
+      .badge-row {
+        display: flex;
+        gap: 12px;
+      }
+      .badge {
+        border-radius: 999px;
+        padding: 11px 22px;
+        font-family: "Rubik", sans-serif;
+        font-weight: 500;
+        font-size: 20px;
+      }
+      .badge-kosher {
+        background: #ffe1ea;
+        color: #9f1239;
+      }
+      .badge-free {
+        background: #e7f4ec;
+        color: #157e3c;
+      }
+      .badge-seats {
+        background: #fff0f4;
+        color: #241419;
+      }
+      .tap-dot {
+        position: absolute;
+        width: 46px;
+        height: 46px;
+        border-radius: 50%;
+        background: rgba(225, 29, 72, 0.28);
+        border: 2px solid #e11d48;
+        top: 252px;
+        left: 380px;
+        opacity: 0;
+        transform: scale(0.6);
+        transform-origin: 50% 50%;
+      }
+
+      .map-panel {
+        position: relative;
+        width: 820px;
+        height: 560px;
+        border-radius: 30px;
+        overflow: hidden;
+        background: #dceaf2;
+        box-shadow: 0 18px 44px rgba(122, 21, 51, 0.11);
+        transform-origin: 50% 50%;
+      }
+      .map-land {
+        position: absolute;
+        width: 540px;
+        height: 1000px;
+        left: -130px;
+        top: -240px;
+        background: #f4ede2;
+        border-radius: 48% 52% 55% 45% / 40% 45% 55% 60%;
+        transform: rotate(8deg);
+      }
+      .map-pin {
+        position: absolute;
+        width: 28px;
+        height: 28px;
+        border-radius: 50% 50% 50% 0;
+        background: #e11d48;
+        border: 3px solid #ffffff;
+        transform: rotate(-45deg) scale(0);
+        transform-origin: 50% 50%;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+      }
+
+      .confirm-bloom {
+        position: absolute;
+        width: 1400px;
+        height: 1400px;
+        top: 50%;
+        left: 46%;
+        margin-top: -700px;
+        margin-left: -700px;
+        border-radius: 50%;
+        background: radial-gradient(circle, rgba(21, 128, 61, 0.24) 0%, rgba(21, 128, 61, 0) 68%);
+        opacity: 0;
+        transform: scale(0.85);
+        transform-origin: 50% 50%;
+      }
+      .confirm-ghost {
+        top: 60px;
+        right: -100px;
+        font-size: 560px;
+        color: #157e3c;
+        opacity: 0.08;
+      }
+      .confirm-wrap {
+        position: absolute;
+        top: 50%;
+        left: 200px;
+        transform: translateY(-50%);
+      }
+      .confirm-card {
+        width: 960px;
+      }
+      .confirm-heading {
+        font-family: "Rubik", sans-serif;
+        font-weight: 600;
+        font-size: 36px;
+        color: #241419;
+        margin-bottom: 34px;
+      }
+      .confirm-banner {
+        display: flex;
+        align-items: center;
+        gap: 20px;
+        background: #e7f4ec;
+        border-radius: 22px;
+        padding: 30px 36px;
+        margin-bottom: 34px;
+        transform-origin: 50% 50%;
+      }
+      .confirm-check {
+        width: 48px;
+        height: 48px;
+        min-width: 48px;
+        border-radius: 50%;
+        background: #15803d;
+        color: #ffffff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 26px;
+        font-weight: 700;
+        transform-origin: 50% 50%;
+      }
+      .confirm-text {
+        font-family: "Rubik", sans-serif;
+        font-weight: 600;
+        font-size: 32px;
+        color: #157e3c;
+      }
+      .potluck-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        background: #ffffff;
+        border: 2px solid #ffe1ea;
+        border-radius: 22px;
+        padding: 28px 34px;
+        opacity: 0;
+        transform: translateY(18px);
+      }
+      .potluck-title {
+        font-family: "Rubik", sans-serif;
+        font-weight: 600;
+        font-size: 26px;
+        color: #241419;
+      }
+      .potluck-sub {
+        font-family: "Rubik", sans-serif;
+        font-weight: 400;
+        font-size: 21px;
+        color: #6b535a;
+        margin-top: 4px;
+      }
+      .potluck-btn {
+        border-radius: 999px;
+        background: #fff0f4;
+        color: #9f1239;
+        font-family: "Rubik", sans-serif;
+        font-weight: 600;
+        font-size: 22px;
+        padding: 17px 32px;
+        white-space: nowrap;
+      }
+
+      /* ---------- scene 4: funding + finale ---------- */
+      .bg-layer {
+        position: absolute;
+        inset: 0;
+      }
+      .bg-white {
+        background: #fff7f9;
+        opacity: 1;
+      }
+      .bg-candle {
+        background: linear-gradient(135deg, #9f1239 0%, #e11d48 100%);
+        opacity: 0;
+      }
+      .funding-ghost {
+        bottom: -160px;
+        left: -60px;
+        font-size: 760px;
+        color: #e11d48;
+        opacity: 0.08;
+      }
+      .funding-group,
+      .finale-group {
+        position: absolute;
+        inset: 0;
+      }
+      .finale-group {
+        opacity: 0;
+      }
+      .funding-split {
+        position: absolute;
+        top: 50%;
+        left: 160px;
+        right: 160px;
+        transform: translateY(-50%);
+        display: flex;
+        align-items: center;
+        gap: 90px;
+      }
+      .funding-stat-zone {
+        width: 760px;
+      }
+      .funding-stat-number {
+        font-family: "Frank Ruhl Libre", Georgia, serif;
+        font-weight: 900;
+        font-size: 168px;
+        color: #e11d48;
+        line-height: 1;
+        letter-spacing: -2px;
+      }
+      .funding-stat-line {
+        margin-top: 22px;
+        font-family: "Rubik", sans-serif;
+        font-weight: 500;
+        font-size: 30px;
+        color: #6b535a;
+        max-width: 640px;
+        line-height: 1.35;
+      }
+      .funding-divider {
+        width: 3px;
+        height: 380px;
+        background: #ffe1ea;
+        transform: scaleY(0);
+        transform-origin: 50% 50%;
+      }
+      .funding-card {
+        width: 720px;
+        background: #ffffff;
+        border-radius: 30px;
+        padding: 46px 50px;
+        box-shadow: 0 18px 44px rgba(122, 21, 51, 0.11);
+        transform-origin: 50% 50%;
+      }
+      .funding-track {
+        width: 100%;
+        height: 22px;
+        border-radius: 11px;
+        background: #ffe1ea;
+        overflow: hidden;
+        margin: 20px 0 18px 0;
+      }
+      .funding-fill {
+        width: 100%;
+        height: 100%;
+        background: #e11d48;
+        transform: scaleX(0);
+        transform-origin: left center;
+      }
+      .funding-amounts {
+        display: flex;
+        justify-content: space-between;
+        font-family: "Rubik", sans-serif;
+        font-weight: 600;
+        font-size: 24px;
+        color: #241419;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root" data-composition-id="shishi-brag" data-start="0" data-width="1920" data-height="1080" data-duration="28.6">
+      <!-- ===================== SCENE 1 — HOOK ===================== -->
+      <div id="scene-hook" class="scene">
+        <div class="grain grain-dark"></div>
+        <div id="hook-ghost" class="ghost" data-layout-allow-overflow="true" style="top: -280px; right: -220px; font-size: 940px; color: #ffffff; opacity: 0.12;">ש</div>
+        <div id="glow-a" class="glow" data-layout-allow-overflow="true" style="width: 900px; height: 900px; top: -260px; left: -200px;"></div>
+        <div id="glow-b" class="glow" data-layout-allow-overflow="true" style="width: 760px; height: 760px; bottom: -280px; right: -180px;"></div>
+        <div id="glow-c" class="glow" data-layout-allow-overflow="true" style="width: 520px; height: 520px; top: 300px; right: 260px;"></div>
+        <div class="center-col">
+          <div id="hook-eyebrow" class="eyebrow" style="margin-bottom: 26px; opacity: 0;">Shabbat Dinners · Tel Aviv</div>
+          <div id="hook-rule" class="rule" style="width: 120px; margin-bottom: 34px;"></div>
+          <div id="hook-badge" class="mark-badge" style="margin-bottom: 30px; opacity: 0;">ש</div>
+          <div id="hook-wordmark" class="wordmark" style="opacity: 0;">Shishi</div>
+        </div>
+        <div id="hook-footer-l" class="footer-label footer-left" style="opacity: 0;">Tel Aviv, Israel</div>
+        <div id="hook-footer-r" class="footer-label footer-right" style="opacity: 0;">Friday Night</div>
+      </div>
+
+      <!-- ===================== SCENE 2 — THE THREE WAYS IN ===================== -->
+      <div id="scene-roles" class="scene">
+        <div class="grain grain-light"></div>
+        <div id="roles-ghost" class="ghost roles-ghost" data-layout-allow-overflow="true">3</div>
+        <div class="roles-topbar">
+          <div id="roles-tag" class="roles-tag" style="opacity: 0;">Three ways in</div>
+          <div id="roles-tag-rule" class="rule rule-dark roles-tag-rule"></div>
+        </div>
+        <div class="center-col">
+          <div style="margin-top: 40px;">
+            <div id="roles-headline" class="roles-headline" style="opacity: 0;">What brings you to Shishi?</div>
+            <div id="roles-divider" class="rule rule-dark roles-divider"></div>
+            <div class="roles-stack">
+              <div id="card-find" class="role-card" style="opacity: 0;">
+                <div class="role-icon">🍽️</div>
+                <div class="role-copy">
+                  <div class="role-title">Find a Shabbat table</div>
+                  <div class="role-sub">Browse dinners and RSVP for a seat.</div>
+                </div>
+                <div id="check-find" class="role-check">✓</div>
+              </div>
+              <div id="card-host" class="role-card" style="opacity: 0;">
+                <div class="role-icon">🏠</div>
+                <div class="role-copy">
+                  <div class="role-title">Host a Shabbat</div>
+                  <div class="role-sub">Open your home and gather a table.</div>
+                </div>
+                <div id="check-host" class="role-check">✓</div>
+              </div>
+              <div id="card-sponsor" class="role-card" style="opacity: 0;">
+                <div class="role-icon">❤️</div>
+                <div class="role-copy">
+                  <div class="role-title">Sponsor a Shabbat</div>
+                  <div class="role-sub">Fund dinners for people who need a table.</div>
+                </div>
+                <div id="check-sponsor" class="role-check">✓</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===================== SCENE 3 — FINDING A TABLE ===================== -->
+      <div id="scene-discover" class="scene">
+        <div class="grain grain-light"></div>
+
+        <div id="discover-view">
+          <div id="discover-ghost" class="ghost discover-ghost" data-layout-allow-overflow="true">שבת</div>
+          <div class="discover-header">
+            <div id="discover-heading" class="discover-heading" style="opacity: 0;">Find a table</div>
+            <div id="discover-tag" class="discover-tag" style="opacity: 0;">Tel Aviv · Fridays</div>
+          </div>
+          <div id="discover-header-rule" class="rule rule-dark discover-header-rule"></div>
+          <div class="discover-row">
+            <div id="dinner-card" class="dinner-card" style="opacity: 0;">
+              <div class="dinner-head">
+                <div class="avatar">J</div>
+                <div>
+                  <div class="dinner-host">Jonathan Levi</div>
+                  <div class="dinner-hosted">✨ Hosted 6 Shabbats</div>
+                </div>
+              </div>
+              <div class="dinner-desc">Laid-back Shabbat with homemade challah.</div>
+              <div class="dinner-meta">
+                <span>📅 Fri, Jul 3 · 19:30</span>
+                <span>📍 Florentin, Tel Aviv</span>
+              </div>
+              <div class="badge-row">
+                <span class="badge badge-kosher">Kosher</span>
+                <span class="badge badge-free">Free</span>
+                <span class="badge badge-seats">3 seats left</span>
+              </div>
+              <div id="tap-dot" class="tap-dot"></div>
+            </div>
+            <div id="map-panel" class="map-panel" style="opacity: 0;">
+              <div class="map-land" data-layout-allow-overflow="true"></div>
+              <div id="pin-1" class="map-pin" style="top: 170px; left: 480px;"></div>
+              <div id="pin-2" class="map-pin" style="top: 320px; left: 340px;"></div>
+              <div id="pin-3" class="map-pin" style="top: 410px; left: 540px;"></div>
+            </div>
+          </div>
+        </div>
+
+        <div id="confirmed-view">
+          <div id="confirm-bloom" class="confirm-bloom"></div>
+          <div id="confirm-ghost" class="ghost confirm-ghost" data-layout-allow-overflow="true">✓</div>
+          <div class="confirm-wrap">
+            <div class="confirm-card">
+              <div class="confirm-heading">Dinner details · Jonathan Levi</div>
+              <div id="confirm-banner" class="confirm-banner">
+                <div class="confirm-check">✓</div>
+                <div class="confirm-text">You're confirmed for this dinner.</div>
+              </div>
+              <div id="potluck-row" class="potluck-row">
+                <div>
+                  <div class="potluck-title">Bottles of wine</div>
+                  <div class="potluck-sub">0 of 2 claimed</div>
+                </div>
+                <div class="potluck-btn">I'll bring this</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===================== SCENE 4 — WHAT MAKES IT POSSIBLE + OUTRO ===================== -->
+      <div id="scene-finale" class="scene">
+        <div class="bg-layer bg-white">
+          <div class="grain grain-light"></div>
+          <div id="funding-ghost" class="ghost funding-ghost" data-layout-allow-overflow="true">₪</div>
+        </div>
+        <div id="bg-candle" class="bg-layer bg-candle">
+          <div class="grain grain-dark"></div>
+          <div id="finale-ghost" class="ghost" data-layout-allow-overflow="true" style="top: -260px; left: -220px; font-size: 940px; color: #ffffff; opacity: 0.12;">ש</div>
+          <div id="glow-d" class="glow" data-layout-allow-overflow="true" style="width: 820px; height: 820px; top: -240px; right: -220px;"></div>
+          <div id="glow-e" class="glow" data-layout-allow-overflow="true" style="width: 620px; height: 620px; bottom: -360px; left: -280px;"></div>
+        </div>
+
+        <div class="funding-group">
+          <div class="funding-split">
+            <div class="funding-stat-zone">
+              <div id="funding-stat-number" class="funding-stat-number" style="opacity: 0;">~$2B</div>
+              <div id="funding-stat-line" class="funding-stat-line" style="opacity: 0;">given to Israeli causes from abroad, every year.</div>
+            </div>
+            <div id="funding-divider" class="funding-divider"></div>
+            <div id="funding-card" class="funding-card" style="opacity: 0;">
+              <div class="dinner-head">
+                <div class="avatar">M</div>
+                <div>
+                  <div class="dinner-host">Maya Ben-David</div>
+                  <div class="dinner-hosted" style="color: #6b535a;">Neve Tzedek, Tel Aviv</div>
+                </div>
+              </div>
+              <div class="funding-track">
+                <div id="funding-fill" class="funding-fill"></div>
+              </div>
+              <div class="funding-amounts">
+                <span>₪390 of ₪600 funded</span>
+                <span>65%</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="finale-group">
+          <div class="center-col">
+            <div id="finale-badge" class="mark-badge" style="margin-bottom: 30px; opacity: 0;">ש</div>
+            <div id="finale-wordmark" class="wordmark" style="font-size: 108px; margin-bottom: 26px; opacity: 0;">Shishi</div>
+            <div id="finale-tagline" class="tagline" style="opacity: 0;">A seat at the table for every Jew who wants one.</div>
+          </div>
+          <div id="finale-footer-l" class="footer-label footer-left" style="opacity: 0;">Tel Aviv, Israel</div>
+          <div id="finale-footer-r" class="footer-label footer-right" style="opacity: 0;">Friday Night</div>
+        </div>
+      </div>
+
+      <!-- ===================== AUDIO ===================== -->
+      <audio id="bgm" data-start="0" data-duration="28.6" data-track-index="10" data-volume="0.28" src="assets/music/happy-beats-business-moves-vol-12-by-ende-dot-app.mp3"></audio>
+      <audio id="sfx-card-1" data-start="7.05" data-duration="0.11" data-track-index="11" data-volume="0.4" src="assets/sfx/interface/drop_001.ogg"></audio>
+      <audio id="sfx-card-2" data-start="8.05" data-duration="0.11" data-track-index="12" data-volume="0.4" src="assets/sfx/interface/drop_001.ogg"></audio>
+      <audio id="sfx-card-3" data-start="9.05" data-duration="0.11" data-track-index="13" data-volume="0.4" src="assets/sfx/interface/drop_001.ogg"></audio>
+      <audio id="sfx-tap" data-start="15.3" data-duration="0.09" data-track-index="14" data-volume="0.45" src="assets/sfx/ui/click1.ogg"></audio>
+      <audio id="sfx-confirm" data-start="16.55" data-duration="0.13" data-track-index="15" data-volume="0.55" src="assets/sfx/interface/bong_001.ogg"></audio>
+      <audio id="sfx-potluck" data-start="17.55" data-duration="0.2" data-track-index="16" data-volume="0.3" src="assets/sfx/interface/drop_002.ogg"></audio>
+      <audio id="sfx-shimmer" data-start="21.6" data-duration="0.21" data-track-index="17" data-volume="0.35" src="assets/sfx/impact/impactGlass_light_001.ogg"></audio>
+    </div>
+
+    <script>
+      window.__timelines = window.__timelines || {};
+      const tl = gsap.timeline({ paused: true });
+
+      /* ============ SCENE 1 — HOOK (0 – 5.85) ============ */
+      tl.fromTo("#glow-a", { x: 0, y: 0, scale: 1 }, { x: 22, y: -16, scale: 1.06, duration: 2.4, ease: "sine.inOut", yoyo: true, repeat: 1 }, 0);
+      tl.fromTo("#glow-b", { x: 0, y: 0, scale: 1 }, { x: -18, y: 14, scale: 1.07, duration: 2.6, ease: "sine.inOut", yoyo: true, repeat: 1 }, 0.2);
+      tl.fromTo("#glow-c", { x: 0, y: 0, scale: 1 }, { x: 14, y: 12, scale: 1.09, duration: 2.9, ease: "sine.inOut", yoyo: true, repeat: 0 }, 0.4);
+      tl.fromTo("#hook-ghost", { x: 0, y: 0, rotation: -2 }, { x: -18, y: 14, rotation: 2, duration: 4.6, ease: "sine.inOut" }, 0);
+
+      tl.fromTo("#hook-eyebrow", { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.7, ease: "power2.out" }, 0.3);
+      tl.fromTo("#hook-rule", { scaleX: 0 }, { scaleX: 1, duration: 0.6, ease: "power3.inOut" }, 0.75);
+      tl.fromTo("#hook-badge", { opacity: 0, scale: 0 }, { opacity: 1, scale: 1, duration: 0.8, ease: "power3.out" }, 0.9);
+      tl.fromTo("#hook-wordmark", { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 0.75, ease: "expo.out" }, 1.15);
+      tl.fromTo("#hook-footer-l", { opacity: 0, x: -16 }, { opacity: 1, x: 0, duration: 0.6, ease: "power2.out" }, 1.7);
+      tl.fromTo("#hook-footer-r", { opacity: 0, x: 16 }, { opacity: 1, x: 0, duration: 0.6, ease: "power2.out" }, 1.85);
+
+      /* transition 1: hook -> roles, blur-crossfade (medium), T=5.0 span 0.85 */
+      tl.to("#scene-hook", { filter: "blur(10px)", scale: 1.03, opacity: 0, duration: 0.75, ease: "power2.inOut" }, 5.0);
+      tl.fromTo("#scene-roles", { filter: "blur(10px)", scale: 0.97, opacity: 0 }, { filter: "blur(0px)", scale: 1, opacity: 1, duration: 0.75, ease: "power2.inOut" }, 5.1);
+
+      /* ============ SCENE 2 — THE THREE WAYS IN (5.0 – 11.5) ============ */
+      tl.fromTo("#roles-tag", { opacity: 0, x: -14 }, { opacity: 1, x: 0, duration: 0.55, ease: "power2.out" }, 5.4);
+      tl.fromTo("#roles-tag-rule", { scaleX: 0 }, { scaleX: 1, duration: 0.5, ease: "power3.inOut" }, 5.75);
+      tl.fromTo("#roles-ghost", { x: 0, y: 0, rotation: 0 }, { x: -10, y: 12, rotation: 1.5, duration: 6.0, ease: "sine.inOut" }, 5.0);
+
+      tl.fromTo("#roles-headline", { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.75, ease: "power3.out" }, 5.9);
+      tl.fromTo("#roles-divider", { scaleX: 0 }, { scaleX: 1, duration: 0.6, ease: "power2.inOut" }, 6.5);
+
+      tl.fromTo("#card-find", { opacity: 0, x: -50, scale: 0.96 }, { opacity: 1, x: 0, scale: 1, duration: 0.7, ease: "power3.out" }, 6.9);
+      tl.fromTo("#check-find", { scale: 0 }, { scale: 1, duration: 0.35, ease: "back.out(1.5)" }, 7.5);
+
+      tl.fromTo("#card-host", { opacity: 0, scale: 0.9 }, { opacity: 1, scale: 1, duration: 0.7, ease: "expo.out" }, 7.9);
+      tl.fromTo("#check-host", { scale: 0 }, { scale: 1, duration: 0.35, ease: "back.out(1.5)" }, 8.5);
+
+      tl.fromTo("#card-sponsor", { opacity: 0, x: 50, scale: 0.96 }, { opacity: 1, x: 0, scale: 1, duration: 0.7, ease: "power3.out" }, 8.9);
+      tl.fromTo("#check-sponsor", { scale: 0 }, { scale: 1, duration: 0.35, ease: "back.out(1.5)" }, 9.5);
+
+      /* breathe: subtle bounded icon pulse during the long hold */
+      tl.fromTo(".role-icon", { scale: 1 }, { scale: 1.035, duration: 1.3, ease: "sine.inOut", yoyo: true, repeat: 3, stagger: 0.25 }, 10.0);
+
+      /* transition 2: roles -> discover, blur-crossfade (medium), T=11.5 span 0.85 */
+      tl.to("#scene-roles", { filter: "blur(10px)", scale: 1.03, opacity: 0, duration: 0.75, ease: "power2.inOut" }, 11.5);
+      tl.fromTo("#scene-discover", { filter: "blur(10px)", scale: 0.97, opacity: 0 }, { filter: "blur(0px)", scale: 1, opacity: 1, duration: 0.75, ease: "power2.inOut" }, 11.6);
+
+      /* ============ SCENE 3 — FINDING A TABLE (11.5 – 19.6) ============ */
+      tl.fromTo("#discover-ghost", { x: 0, y: 0, rotation: 0 }, { x: 14, y: -10, rotation: -1.5, duration: 8.0, ease: "sine.inOut" }, 11.5);
+      tl.fromTo("#discover-heading", { opacity: 0, x: -24 }, { opacity: 1, x: 0, duration: 0.6, ease: "power3.out" }, 11.9);
+      tl.fromTo("#discover-tag", { opacity: 0, x: 16 }, { opacity: 1, x: 0, duration: 0.55, ease: "power2.out" }, 12.15);
+      tl.fromTo("#discover-header-rule", { scaleX: 0 }, { scaleX: 1, duration: 0.55, ease: "power2.inOut" }, 12.35);
+
+      tl.fromTo("#dinner-card", { opacity: 0, y: 28 }, { opacity: 1, y: 0, duration: 0.75, ease: "expo.out" }, 12.7);
+      tl.fromTo("#map-panel", { opacity: 0, scale: 0.94 }, { opacity: 1, scale: 1, duration: 0.75, ease: "power3.out" }, 12.95);
+      tl.fromTo("#pin-1", { scale: 0 }, { scale: 1, duration: 0.4, ease: "back.out(1.6)" }, 13.5);
+      tl.fromTo("#pin-2", { scale: 0 }, { scale: 1, duration: 0.4, ease: "back.out(1.6)" }, 13.7);
+      tl.fromTo("#pin-3", { scale: 0 }, { scale: 1, duration: 0.4, ease: "back.out(1.6)" }, 13.9);
+      /* pins breathe gently once landed */
+      tl.fromTo("#pin-1", { scale: 1 }, { scale: 1.12, duration: 1.1, ease: "sine.inOut", yoyo: true, repeat: 2 }, 14.0);
+      tl.fromTo("#pin-2", { scale: 1 }, { scale: 1.12, duration: 1.2, ease: "sine.inOut", yoyo: true, repeat: 2 }, 14.2);
+      tl.fromTo("#pin-3", { scale: 1 }, { scale: 1.12, duration: 1.15, ease: "sine.inOut", yoyo: true, repeat: 2 }, 14.4);
+
+      /* simulated tap on the dinner card */
+      tl.fromTo("#tap-dot", { opacity: 0, scale: 0.6 }, { opacity: 1, scale: 1, duration: 0.25, ease: "power2.out" }, 15.3);
+      tl.to("#tap-dot", { opacity: 0, duration: 0.3, ease: "power1.in" }, 15.65);
+      tl.to("#dinner-card", { scale: 0.97, duration: 0.14, ease: "power2.in" }, 15.35);
+      tl.to("#dinner-card", { scale: 1, duration: 0.22, ease: "power2.out" }, 15.49);
+
+      /* internal crossfade: discover-view -> confirmed-view, T=16.0 span 0.7 */
+      tl.to("#discover-view", { filter: "blur(8px)", opacity: 0, duration: 0.6, ease: "power2.inOut" }, 16.0);
+      tl.fromTo("#confirmed-view", { filter: "blur(8px)", opacity: 0 }, { filter: "blur(0px)", opacity: 1, duration: 0.6, ease: "power2.inOut" }, 16.1);
+
+      tl.fromTo("#confirm-bloom", { opacity: 0, scale: 0.85 }, { opacity: 1, scale: 1, duration: 0.75, ease: "power2.out" }, 16.55);
+      tl.fromTo("#confirm-ghost", { opacity: 0, x: 0 }, { opacity: 1, x: -14, duration: 2.2, ease: "power1.out" }, 16.55);
+      tl.fromTo("#confirm-banner", { opacity: 0, scale: 0.92 }, { opacity: 1, scale: 1, duration: 0.65, ease: "power3.out" }, 16.55);
+      tl.fromTo("#potluck-row", { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.6, ease: "power3.out" }, 17.55);
+
+      /* transition 3: discover -> finale, blur-crossfade (CALM, boldest accent), T=19.6 */
+      tl.to("#scene-discover", { filter: "blur(25px)", scale: 1.05, duration: 0.6, ease: "power1.in" }, 19.6);
+      tl.to("#scene-discover", { opacity: 0, duration: 0.4, ease: "power1.in" }, 20.0);
+      tl.fromTo(
+        "#scene-finale",
+        { filter: "blur(25px)", scale: 0.95, opacity: 0 },
+        { filter: "blur(25px)", scale: 0.95, opacity: 1, duration: 0.3, ease: "power1.inOut" },
+        20.1,
+      );
+      tl.to("#scene-finale", { filter: "blur(0px)", scale: 1, duration: 0.6, ease: "power1.out" }, 20.41);
+
+      /* ============ SCENE 4a — WHAT MAKES IT POSSIBLE (19.6 – 23.6) ============ */
+      tl.fromTo("#funding-ghost", { x: 0, y: 0, rotation: -3 }, { x: 16, y: -14, rotation: 1, duration: 4.0, ease: "sine.inOut" }, 19.6);
+      tl.fromTo("#funding-stat-number", { opacity: 0, y: 32 }, { opacity: 1, y: 0, duration: 0.8, ease: "expo.out" }, 20.5);
+      tl.fromTo("#funding-stat-line", { opacity: 0 }, { opacity: 1, duration: 0.6, ease: "power2.out" }, 21.0);
+      tl.fromTo("#funding-divider", { scaleY: 0 }, { scaleY: 1, duration: 0.5, ease: "power2.inOut" }, 20.8);
+      tl.fromTo("#funding-card", { opacity: 0, x: 44 }, { opacity: 1, x: 0, duration: 0.75, ease: "power3.out" }, 21.1);
+      /* funding-bar fill, beat-locked: strong cue at 22.93s (intensity 0.99) */
+      tl.fromTo("#funding-fill", { scaleX: 0 }, { scaleX: 0.65, duration: 1.33, ease: "power2.out" }, 21.6); // beat-locked: 22.93s
+
+      /* internal crossfade: funding-group -> finale-group + bg swap, T=23.6 span 0.8 */
+      tl.to(".funding-group", { filter: "blur(10px)", opacity: 0, duration: 0.7, ease: "power2.inOut" }, 23.6);
+      tl.fromTo(".finale-group", { filter: "blur(10px)", opacity: 0 }, { filter: "blur(0px)", opacity: 1, duration: 0.7, ease: "power2.inOut" }, 23.7);
+      tl.to("#bg-candle", { opacity: 1, duration: 0.8, ease: "power2.inOut" }, 23.6);
+      tl.to("#funding-ghost", { opacity: 0, duration: 0.6, ease: "power1.in" }, 23.6);
+      tl.set("#funding-ghost", { opacity: 0, visibility: "hidden" }, 24.2); // non-clip kill once fully covered by the candle layer
+
+      /* ============ SCENE 4b — OUTRO (23.6 – 28.6) ============ */
+      tl.fromTo("#finale-badge", { opacity: 0, scale: 0 }, { opacity: 1, scale: 1, duration: 0.7, ease: "power3.out" }, 24.0);
+      tl.fromTo("#finale-wordmark", { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.7, ease: "expo.out" }, 24.3);
+      tl.fromTo("#finale-tagline", { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.75, ease: "power2.out" }, 24.6);
+      tl.fromTo("#finale-footer-l", { opacity: 0, x: -16 }, { opacity: 1, x: 0, duration: 0.6, ease: "power2.out" }, 25.6);
+      tl.fromTo("#finale-footer-r", { opacity: 0, x: 16 }, { opacity: 1, x: 0, duration: 0.6, ease: "power2.out" }, 25.75);
+
+      /* finale glow drift + ghost drift (bounded) */
+      tl.fromTo("#glow-d", { x: 0, y: 0, scale: 1 }, { x: -16, y: 12, scale: 1.06, duration: 3.6, ease: "sine.inOut", yoyo: true, repeat: 0 }, 23.7);
+      tl.fromTo("#glow-e", { x: 0, y: 0, scale: 1 }, { x: 14, y: -12, scale: 1.07, duration: 3.9, ease: "sine.inOut", yoyo: true, repeat: 0 }, 23.9);
+      tl.fromTo("#finale-ghost", { x: 0, y: 0, rotation: 2 }, { x: -16, y: 12, rotation: -2, duration: 4.6, ease: "sine.inOut" }, 24.0);
+
+      /* final-scene exception: fade the whole finale scene to black at the very end */
+      tl.to("#scene-finale", { opacity: 0, duration: 0.7, ease: "power1.in" }, 27.9);
+
+      /* ============ AUDIO VOLUME ARC ============ */
+      tl.fromTo("#bgm", { volume: 0 }, { volume: 0.28, duration: 1.1, ease: "power1.out" }, 0);
+      tl.to("#bgm", { volume: 0.32, duration: 1.1, ease: "sine.inOut" }, 11.5);
+      tl.to("#bgm", { volume: 0.15, duration: 1.3, ease: "sine.inOut" }, 25.4);
+      tl.to("#bgm", { volume: 0, duration: 0.7, ease: "power1.in" }, 27.9);
+
+      window.__timelines["shishi-brag"] = tl;
+    </script>
+  </body>
+</html>
