@@ -45,7 +45,7 @@ export default function AttendeeOnboarding() {
     if (draft.roles.includes("host")) {
       router.push("/(onboarding)/host");
     } else if (draft.roles.includes("sponsor")) {
-      router.push("/(onboarding)/sponsor");
+      router.push("/(onboarding)/sponsor-preferences");
     } else {
       router.push("/(onboarding)/done");
     }

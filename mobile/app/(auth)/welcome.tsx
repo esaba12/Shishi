@@ -26,7 +26,7 @@ export default function Welcome() {
 
   if (isDesktop) {
     return (
-      <Screen scroll={false} padded={false} fullBleed>
+      <Screen padded={false} fullBleed>
         <DesktopLanding
           onGetStarted={getStarted}
           onLogIn={isSupabaseConfigured ? logIn : undefined}

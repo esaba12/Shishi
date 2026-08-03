@@ -17,8 +17,12 @@ interface ScreenProps {
 export function Screen({ children, scroll = true, style, padded = true, fullBleed = false }: ScreenProps) {
   const { contentMaxWidth } = useResponsive();
   // Cap + center content so mobile-first screens read as intentional on desktop web.
+  // fullBleed + scroll (e.g. a long-form landing page) must NOT get flex:1 — inside a ScrollView
+  // that fights natural content-driven height and clips anything past one viewport.
   const centered: ViewStyle = fullBleed
-    ? { width: "100%", flex: 1 }
+    ? scroll
+      ? { width: "100%" }
+      : { width: "100%", flex: 1 }
     : { width: "100%", maxWidth: contentMaxWidth, alignSelf: "center" };
 
   const content = (

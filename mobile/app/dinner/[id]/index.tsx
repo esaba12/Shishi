@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { I18nManager, ScrollView, StyleSheet, Text, View } from "react-native";
+import { I18nManager, ScrollView, StyleSheet, Text, View, ViewStyle } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -46,8 +46,14 @@ export default function DinnerDetail() {
   const { profile } = useAuth();
   const insets = useSafeAreaInsets();
   const { show } = useToast();
-  const { contentMaxWidth } = useResponsive();
-  const centered = { width: "100%" as const, maxWidth: contentMaxWidth, alignSelf: "center" as const };
+  const { contentMaxWidth, isDesktop } = useResponsive();
+  // Desktop gets a wider two-column reading width (content + sticky booking card) instead of the
+  // mobile-capped single column — a stretched phone layout was leaving half the viewport blank.
+  const centered = {
+    width: "100%" as const,
+    maxWidth: isDesktop ? 1040 : contentMaxWidth,
+    alignSelf: "center" as const,
+  };
   const [dinner, setDinner] = useState<Dinner | null>(null);
   const [myRsvp, setMyRsvp] = useState<{ status: string; paymentStatus: string } | null>(null);
   const [potluckItems, setPotluckItems] = useState<PotluckItem[]>([]);
@@ -187,79 +193,109 @@ export default function DinnerDetail() {
         <Header title={t("dinner.title")} />
       </View>
       <ScrollView
-        contentContainerStyle={[styles.scroll, centered, { paddingBottom: myRsvp ? spacing.xl : 128 }]}
+        contentContainerStyle={[styles.scroll, centered, { paddingBottom: !isDesktop && !myRsvp ? 128 : spacing.xl }]}
         showsVerticalScrollIndicator={false}
       >
-        <View style={styles.hostRow}>
-          <Avatar uri={dinner.hostPhotoUrl} name={dinner.hostName} size={60} />
-          <View style={styles.hostText}>
-            <Text style={styles.hostName}>{dinner.hostName}</Text>
-            <View style={styles.trustRow}>
-              <Ionicons name="sparkles" size={13} color={colors.brand} />
-              <Text style={styles.hostMeta}>
-                {t("dinner.hostedShabbats", { count: dinner.hostDinnersHostedCount })}
-              </Text>
+        <View style={isDesktop ? styles.desktopRow : undefined}>
+          <View style={isDesktop ? styles.mainCol : undefined}>
+            <View style={styles.hostRow}>
+              <Avatar uri={dinner.hostPhotoUrl} name={dinner.hostName} size={60} />
+              <View style={styles.hostText}>
+                <Text style={styles.hostName}>{dinner.hostName}</Text>
+                <View style={styles.trustRow}>
+                  <Ionicons name="sparkles" size={13} color={colors.brand} />
+                  <Text style={styles.hostMeta}>
+                    {t("dinner.hostedShabbats", { count: dinner.hostDinnersHostedCount })}
+                  </Text>
+                </View>
+              </View>
             </View>
+
+            <Text style={styles.description}>{dinner.description}</Text>
+
+            <Card style={styles.infoCard} padded={false}>
+              <InfoRow icon="calendar-outline" label={t("dinner.when")} value={`${formatDate(dinner.date)} · ${dinner.startTime}`} />
+              <Divider />
+              <InfoRow
+                icon={addressVisible ? "location-outline" : "lock-closed-outline"}
+                label={t("dinner.where")}
+                value={addressVisible ? address ?? dinner.area : t("dinner.addressHidden", { area: dinner.area })}
+                muted={!addressVisible}
+              />
+              <Divider />
+              <InfoRow icon="restaurant-outline" label={t("dinner.kosher")} value={kosherLabel} />
+              <Divider />
+              <InfoRow
+                icon="pricetag-outline"
+                label={t("dinner.cost")}
+                value={dinner.isFree ? t("common.free") : t("dinner.costPerPerson", { amount: dinner.costPerHead })}
+              />
+              <Divider />
+              <InfoRow
+                icon="people-outline"
+                label={t("dinner.seats")}
+                value={seatsLeft > 0 ? t("dinner.seatsValue", { left: seatsLeft, total: dinner.capacity }) : t("common.full")}
+              />
+            </Card>
+
+            {!isDesktop && myRsvp ? <StatusBanner status={myRsvp.status} /> : null}
+
+            {potluckItems.length > 0 && (
+              <PotluckSection
+                items={potluckItems}
+                myProfileId={profile?.id}
+                canClaim={canClaimPotluck}
+                onClaim={handleClaim}
+                onCancel={handleCancelClaim}
+              />
+            )}
+
+            <Button
+              label={t("dinner.reportDinner")}
+              variant="ghost"
+              size="sm"
+              haptic={false}
+              onPress={() =>
+                router.push({
+                  pathname: "/report",
+                  params: { targetType: "dinner", targetId: dinner.id, label: "dinner" },
+                })
+              }
+              style={styles.report}
+            />
           </View>
+
+          {isDesktop ? (
+            <View style={styles.sideCol}>
+              <Card elevated style={styles.sideCard}>
+                <View style={styles.sidePriceRow}>
+                  <Text style={styles.sidePriceValue}>
+                    {dinner.isFree ? t("common.free") : `₪${dinner.costPerHead}`}
+                  </Text>
+                  {!dinner.isFree ? <Text style={styles.sidePriceUnit}>{t("discover.perPerson")}</Text> : null}
+                </View>
+                <Text style={styles.sideSeats}>
+                  {seatsLeft > 0 ? t("dinner.seatsValue", { left: seatsLeft, total: dinner.capacity }) : t("common.full")}
+                </Text>
+                {myRsvp ? (
+                  <StatusBanner status={myRsvp.status} />
+                ) : (
+                  <Button
+                    label={ctaLabel}
+                    onPress={handleRsvp}
+                    disabled={seatsLeft <= 0}
+                    loading={submitting}
+                    size="lg"
+                    style={styles.sideCta}
+                  />
+                )}
+              </Card>
+            </View>
+          ) : null}
         </View>
-
-        <Text style={styles.description}>{dinner.description}</Text>
-
-        <Card style={styles.infoCard} padded={false}>
-          <InfoRow icon="calendar-outline" label={t("dinner.when")} value={`${formatDate(dinner.date)} · ${dinner.startTime}`} />
-          <Divider />
-          <InfoRow
-            icon={addressVisible ? "location-outline" : "lock-closed-outline"}
-            label={t("dinner.where")}
-            value={addressVisible ? address ?? dinner.area : t("dinner.addressHidden", { area: dinner.area })}
-            muted={!addressVisible}
-          />
-          <Divider />
-          <InfoRow icon="restaurant-outline" label={t("dinner.kosher")} value={kosherLabel} />
-          <Divider />
-          <InfoRow
-            icon="pricetag-outline"
-            label={t("dinner.cost")}
-            value={dinner.isFree ? t("common.free") : t("dinner.costPerPerson", { amount: dinner.costPerHead })}
-          />
-          <Divider />
-          <InfoRow
-            icon="people-outline"
-            label={t("dinner.seats")}
-            value={seatsLeft > 0 ? t("dinner.seatsValue", { left: seatsLeft, total: dinner.capacity }) : t("common.full")}
-          />
-        </Card>
-
-        {myRsvp ? (
-          <StatusBanner status={myRsvp.status} />
-        ) : null}
-
-        {potluckItems.length > 0 && (
-          <PotluckSection
-            items={potluckItems}
-            myProfileId={profile?.id}
-            canClaim={canClaimPotluck}
-            onClaim={handleClaim}
-            onCancel={handleCancelClaim}
-          />
-        )}
-
-        <Button
-          label={t("dinner.reportDinner")}
-          variant="ghost"
-          size="sm"
-          haptic={false}
-          onPress={() =>
-            router.push({
-              pathname: "/report",
-              params: { targetType: "dinner", targetId: dinner.id, label: "dinner" },
-            })
-          }
-          style={styles.report}
-        />
       </ScrollView>
 
-      {!myRsvp ? (
+      {!isDesktop && !myRsvp ? (
         <View style={[styles.footer, elevation.overlay, { paddingBottom: insets.bottom + spacing.md }]}>
           <View style={[styles.footerInner, centered]}>
             <View style={styles.footerPrice}>
@@ -485,6 +521,23 @@ const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.bg },
   headerWrap: { paddingHorizontal: spacing.lg, paddingTop: spacing.md },
   scroll: { paddingHorizontal: spacing.lg },
+  // alignItems stays default ("stretch") so sideCol's height matches the taller mainCol — sticky
+  // has no room to hold its position if its own containing block is only as tall as the card.
+  desktopRow: { flexDirection: "row", gap: spacing.xl },
+  mainCol: { flex: 1, minWidth: 0 },
+  sideCol: { width: 300 },
+  sideCard: {
+    // Sticky on the web-only desktop branch so the price + CTA stay in view while the longer
+    // left column (potluck checklist, etc.) scrolls beneath it — same pattern as a booking-site
+    // summary card. `sticky` isn't in RN's ViewStyle union; react-native-web passes it through as-is.
+    position: "sticky" as ViewStyle["position"],
+    top: spacing.lg,
+  },
+  sidePriceRow: { flexDirection: "row", alignItems: "baseline", marginBottom: spacing.xs },
+  sidePriceValue: { ...typography.h1, color: colors.textPrimary },
+  sidePriceUnit: { ...typography.caption, color: colors.textSecondary, marginStart: spacing.xs },
+  sideSeats: { ...typography.body, color: colors.textSecondary, marginBottom: spacing.md },
+  sideCta: { width: "100%" },
   hostRow: { flexDirection: "row", alignItems: "center", marginBottom: spacing.lg },
   hostText: { marginStart: spacing.md, flex: 1 },
   hostName: { ...typography.h2, color: colors.textPrimary },

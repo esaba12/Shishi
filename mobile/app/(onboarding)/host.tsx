@@ -18,7 +18,7 @@ export default function HostOnboarding() {
   function handleContinue() {
     setHostDetails({ bio, homeVibe });
     if (draft.roles.includes("sponsor")) {
-      router.push("/(onboarding)/sponsor");
+      router.push("/(onboarding)/sponsor-preferences");
     } else {
       router.push("/(onboarding)/done");
     }

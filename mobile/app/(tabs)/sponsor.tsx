@@ -13,6 +13,7 @@ import { colors, radii, spacing, typography } from "@/constants/theme";
 import { MISSION_STATS } from "@/constants/options";
 import { fetchSponsorFeed } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
+import { useResponsive } from "@/lib/responsive";
 import type { Dinner } from "@/types";
 
 function NonSponsorUpsell() {
@@ -47,8 +48,14 @@ function NonSponsorUpsell() {
 function DonorFeed() {
   const { sponsorDetails } = useAuth();
   const { show } = useToast();
+  const { isDesktop, width } = useResponsive();
   const [dinners, setDinners] = useState<Dinner[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // A single stretched-phone column was leaving most of the viewport blank on desktop, on the exact
+  // screen where a sponsor decides where their money goes — this is the donor "Tinder feed" the
+  // product bible describes, so it earns a real card wall instead. Off on mobile/tablet.
+  const numColumns = !isDesktop ? 1 : width >= 1400 ? 3 : 2;
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -73,8 +80,8 @@ function DonorFeed() {
   const initialLoading = loading && dinners.length === 0;
 
   return (
-    <Screen scroll={false} padded={false}>
-      <View style={styles.feedHeader}>
+    <Screen scroll={false} padded={false} fullBleed={isDesktop}>
+      <View style={[styles.feedHeader, isDesktop && styles.desktopCap]}>
         <Text style={styles.greeting}>DONOR FEED</Text>
         <Text style={styles.title}>Fund a table</Text>
         <Text style={styles.subtitle}>
@@ -90,23 +97,28 @@ function DonorFeed() {
       </View>
 
       {initialLoading ? (
-        <View style={styles.list}>
+        <View style={[styles.list, isDesktop && styles.desktopCap]}>
           {[0, 1, 2].map((i) => (
             <DinnerCardSkeleton key={i} />
           ))}
         </View>
       ) : (
         <FlatList
+          key={`donor-feed-${numColumns}`}
           data={dinners}
           keyExtractor={(item) => item.id}
-          contentContainerStyle={styles.list}
+          numColumns={numColumns}
+          columnWrapperStyle={numColumns > 1 ? styles.gridRow : undefined}
+          contentContainerStyle={[styles.list, isDesktop && styles.desktopCap]}
           refreshing={loading}
           onRefresh={load}
           showsVerticalScrollIndicator={false}
           renderItem={({ item, index }) => (
-            <Reveal delay={Math.min(index, 5) * 60}>
-              <SponsorDinnerCard dinner={item} onPress={() => router.push(`/dinner/${item.id}/donate`)} />
-            </Reveal>
+            <View style={numColumns > 1 ? styles.gridItem : undefined}>
+              <Reveal delay={Math.min(index, 5) * 60}>
+                <SponsorDinnerCard dinner={item} onPress={() => router.push(`/dinner/${item.id}/donate`)} />
+              </Reveal>
+            </View>
           )}
           ListEmptyComponent={
             <EmptyState
@@ -157,4 +169,7 @@ const styles = StyleSheet.create({
   greeting: { ...typography.label, color: colors.brand, textTransform: "uppercase" },
   myDonationsBtn: { alignSelf: "flex-start", marginBottom: spacing.md },
   list: { paddingHorizontal: spacing.lg, paddingBottom: spacing.xl, paddingTop: spacing.xs },
+  desktopCap: { width: "100%", maxWidth: 1200, alignSelf: "center" },
+  gridRow: { gap: spacing.md },
+  gridItem: { flex: 1 },
 });
