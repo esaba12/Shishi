@@ -1,5 +1,5 @@
 import React from "react";
-import { Pressable, StyleSheet, Text, useWindowDimensions, View, ViewStyle } from "react-native";
+import { Pressable, StyleProp, StyleSheet, Text, View, ViewStyle } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { MotiView } from "moti";
 import { Ionicons } from "@expo/vector-icons";
@@ -32,9 +32,9 @@ const MISSION =
 
 /** Desktop-only entry point (≥900px) — the mobile welcome screen (bare wordmark + two buttons) stays
  *  the fallback below that width. A full scrolling page rather than a single fixed hero: the hero
- *  makes the first impression (candle-lighting "sundown" panel — the literal Shabbat ritual, since
- *  Shishi/שישי means Friday), then the page earns the "fund this" pitch with the actual three-sided
- *  flow, the OneTable precedent, and the mission, before closing on a second CTA. */
+ *  makes the first impression with the candlelight gradient panel, then the page earns the "fund
+ *  this" pitch with the actual three-sided flow, the OneTable precedent, and the mission, before
+ *  closing on a second CTA. */
 export function DesktopLanding({
   onGetStarted,
   onLogIn,
@@ -44,12 +44,9 @@ export function DesktopLanding({
   onLogIn?: () => void;
   onDemo?: () => void;
 }) {
-  const { height } = useWindowDimensions();
-  const heroMinHeight = Math.max(640, Math.min(height, 800));
-
   return (
     <View style={styles.page}>
-      <View style={[styles.heroRow, { minHeight: heroMinHeight }]}>
+      <View style={styles.heroRow}>
         <View style={styles.left}>
           <Reveal style={styles.logoRow}>
             <Logo size={30} />
@@ -73,34 +70,15 @@ export function DesktopLanding({
               {onDemo ? <Button label="Continue as demo user" variant="ghost" onPress={onDemo} /> : null}
             </View>
           </Reveal>
-          <Reveal delay={230}>
-            <View style={styles.credibility}>
-              <View style={styles.credibilityRule} />
-              <Text style={styles.credibilityText}>
-                Modeled on OneTable (US + Toronto) — with the donor-facing sponsorship layer no one
-                has brought to Israel.
-              </Text>
-            </View>
-          </Reveal>
         </View>
 
         <View style={styles.right}>
-          <LinearGradient
-            colors={[colors.brand, colors.brandDark, colors.textPrimary]}
-            start={{ x: 0.1, y: 0 }}
-            end={{ x: 0.7, y: 1 }}
-            style={StyleSheet.absoluteFill}
-          />
+          <LinearGradient colors={[colors.brandDark, colors.brand]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />
           <GrainOverlay style={StyleSheet.absoluteFill} />
-          <LogoMark size={128} style={styles.watermark} />
-          <View style={styles.candleScene}>
-            <View style={styles.candleRow}>
-              <Candle delay={0} />
-              <Candle delay={260} />
-            </View>
-            <View style={styles.horizonLine} />
-            <Text style={styles.candleCaption}>CANDLES · WINE · BREAD — EVERY FRIDAY</Text>
-          </View>
+          <Glow style={[styles.glow, styles.glowOne]} driftX={14} driftY={-10} driftScale={1.05} duration={8000} />
+          <Glow style={[styles.glow, styles.glowTwo]} driftX={-10} driftY={12} driftScale={1.06} duration={6500} delay={200} />
+          <Glow style={[styles.glow, styles.glowThree]} driftX={8} driftY={8} driftScale={1.08} duration={9000} delay={400} />
+          <LogoMark size={72} style={styles.watermark} />
         </View>
       </View>
 
@@ -195,27 +173,51 @@ function Section({
   );
 }
 
-// A single Shabbat candle: soft blurred glow + bright core flame, both flickering independently on a
-// slow loop so the pair never moves in lockstep. Reduced motion keeps a static, lit flame.
-function Candle({ delay = 0 }: { delay?: number }) {
+// Ambient drift for the hero's "candlelight" glow circles — a slow, looping translate+scale
+// oscillation, staggered per-glow (different durations/delays) so they don't move in lockstep.
+// Reduced motion keeps the fade-in entrance but skips the loop entirely (static glow).
+function Glow({
+  style,
+  driftX,
+  driftY,
+  driftScale,
+  duration,
+  delay = 0,
+}: {
+  style: StyleProp<ViewStyle>;
+  driftX: number;
+  driftY: number;
+  driftScale: number;
+  duration: number;
+  delay?: number;
+}) {
   const reducedMotion = useReducedMotion();
 
+  if (reducedMotion) {
+    return (
+      <MotiView
+        pointerEvents="none"
+        style={style}
+        from={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ type: "timing", duration: 300 }}
+      />
+    );
+  }
+
   return (
-    <View style={styles.candle}>
-      <MotiView
-        style={styles.flameGlow}
-        from={{ opacity: 0.3, scale: 1 }}
-        animate={reducedMotion ? { opacity: 0.4, scale: 1 } : { opacity: 0.55, scale: 1.18 }}
-        transition={reducedMotion ? { type: "timing", duration: 1 } : { type: "timing", duration: 1500, delay, loop: true }}
-      />
-      <MotiView
-        style={styles.flameCore}
-        from={{ opacity: 0.88, scaleY: 1 }}
-        animate={reducedMotion ? { opacity: 1, scaleY: 1 } : { opacity: 1, scaleY: 1.15 }}
-        transition={reducedMotion ? { type: "timing", duration: 1 } : { type: "timing", duration: 1200, delay: delay + 90, loop: true }}
-      />
-      <View style={styles.candleBody} />
-    </View>
+    <MotiView
+      pointerEvents="none"
+      style={style}
+      from={{ opacity: 0, translateX: 0, translateY: 0, scale: 1 }}
+      animate={{ opacity: 1, translateX: driftX, translateY: driftY, scale: driftScale }}
+      transition={{
+        opacity: { type: "timing", duration: 500, delay },
+        translateX: { type: "timing", duration, delay: 500 + delay, loop: true },
+        translateY: { type: "timing", duration: duration * 0.9, delay: 500 + delay, loop: true },
+        scale: { type: "timing", duration: duration * 1.1, delay: 500 + delay, loop: true },
+      }}
+    />
   );
 }
 
@@ -223,13 +225,12 @@ const styles = StyleSheet.create({
   page: { width: "100%" },
 
   // --- Hero ------------------------------------------------------------------
-  heroRow: { flexDirection: "row", width: "100%" },
+  heroRow: { flexDirection: "row", width: "100%", minHeight: 560 },
   left: {
     flex: 1,
     maxWidth: 620,
-    justifyContent: "flex-start",
-    paddingTop: spacing.xxl + 16,
-    paddingBottom: spacing.xl,
+    justifyContent: "center",
+    paddingVertical: spacing.xxl,
     paddingHorizontal: spacing.xl,
   },
   logoRow: { marginBottom: spacing.xl },
@@ -243,35 +244,23 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md,
   },
   subtitle: { ...typography.body, fontSize: 17, lineHeight: 26, color: colors.textSecondary, marginBottom: spacing.lg, maxWidth: 480 },
-  actions: { flexDirection: "row", gap: spacing.md, marginBottom: spacing.lg, alignItems: "center", flexWrap: "wrap" },
-  credibility: { maxWidth: 420 },
-  credibilityRule: { width: 40, height: 2, backgroundColor: colors.brand, marginBottom: spacing.sm, borderRadius: 1 },
-  credibilityText: { ...typography.caption, fontSize: 13.5, lineHeight: 19, color: colors.textSecondary },
+  actions: { flexDirection: "row", gap: spacing.md, alignItems: "center", flexWrap: "wrap" },
 
-  right: { flex: 1, overflow: "hidden", position: "relative" },
-  watermark: { position: "absolute", top: -18, right: -18, opacity: 0.16, transform: [{ rotate: "-6deg" }] },
-  candleScene: { position: "absolute", bottom: "16%", width: "100%", alignItems: "center" },
-  candleRow: { flexDirection: "row", gap: 26, marginBottom: 14 },
-  candle: { width: 26, alignItems: "center" },
-  candleBody: { width: 12, height: 46, borderRadius: 3, backgroundColor: "rgba(255,255,255,0.92)" },
-  flameGlow: {
-    position: "absolute",
-    top: -16,
-    width: 26,
-    height: 26,
-    borderRadius: 13,
-    backgroundColor: colors.brandSoft,
+  right: {
+    flex: 1,
+    overflow: "hidden",
+    alignItems: "center",
+    justifyContent: "center",
   },
-  flameCore: {
+  glow: {
     position: "absolute",
-    top: -10,
-    width: 8,
-    height: 13,
-    borderRadius: 4,
-    backgroundColor: colors.onBrand,
+    borderRadius: 9999,
+    backgroundColor: "rgba(255,255,255,0.16)",
   },
-  horizonLine: { width: 160, height: 1, backgroundColor: "rgba(255,255,255,0.3)", marginBottom: 14 },
-  candleCaption: { ...typography.label, color: "rgba(255,255,255,0.75)", letterSpacing: 1.5, fontSize: 11 },
+  glowOne: { width: 420, height: 420, top: -120, start: -80 },
+  glowTwo: { width: 280, height: 280, bottom: -60, end: -40, backgroundColor: "rgba(255,255,255,0.1)" },
+  glowThree: { width: 180, height: 180, top: "38%", start: "55%", backgroundColor: "rgba(255,255,255,0.12)" },
+  watermark: { opacity: 0.9 },
 
   // --- Sections ----------------------------------------------------------------
   section: { width: "100%", paddingVertical: spacing.xxl },
