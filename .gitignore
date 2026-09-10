@@ -3,3 +3,11 @@ supabase/.temp/
 
 # Claude Code local tooling state (settings, worktrees) — machine-specific, not project source.
 .claude/
+
+# Local env files — never commit real keys.
+.env
+.env*.local
+*.pem
+
+# macOS
+.DS_Store
