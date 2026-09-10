@@ -11,3 +11,7 @@ supabase/.temp/
 
 # macOS
 .DS_Store
+
+# Video-production working files (HyperFrames output, briefs) — kept locally, not part of the project.
+brag-output/
+video-brief.md
