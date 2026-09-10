@@ -1,24 +1,24 @@
 # Shishi
 
-A three-sided platform that funds and organizes Shabbat dinners in Tel Aviv — connecting
+A three-sided platform that funds and organizes Shabbat dinners in Tel Aviv, connecting
 **sponsors** who underwrite dinners, **hosts** who open their homes, and **attendees**
 looking for a seat at the table.
 
 ![Shishi demo](docs/media/shishi-demo.gif)
 
-▶ [Watch with sound](https://ethansaba.com/videos/shishi.mp4) — "A seat at the table for every Jew who wants one."
+▶ [Watch with sound](https://ethansaba.com/videos/shishi.mp4): "A seat at the table for every Jew who wants one."
 · **[Live demo](https://shishi-app.vercel.app/)**
 
 ## What it does
 
-- **Hosts** publish a dinner — date, capacity, kosher level, home vibe — and manage RSVPs.
+- **Hosts** publish a dinner (date, capacity, kosher level, home vibe) and manage RSVPs.
 - **Attendees** discover dinners on a map, RSVP, and claim potluck items so ten people
   don't all bring hummus.
 - **Sponsors** underwrite dinners through Stripe, with preferences for the kind of dinner
   they want to fund.
-- **Everyone** messages within a dinner thread, and can report a problem — a platform that
+- **Everyone** messages within a dinner thread, and can report a problem. A platform that
   puts strangers in each other's homes needs a moderation path on day one.
-- **Try it without an account** — `/demo` picks a role and runs the real flows.
+- **Try it without an account**: `/demo` picks a role and runs the real flows.
 
 ## Architecture
 
@@ -77,7 +77,7 @@ cp .env.example .env            # fill in the values `supabase start` printed
 npx expo start                  # press w for web, i / a for simulators
 ```
 
-Stripe is optional for local development — the payment flows need
+Stripe is optional for local development: the payment flows need
 `STRIPE_SECRET_KEY` and `STRIPE_WEBHOOK_SECRET` set as Supabase project secrets
 (`supabase secrets set`), never in `.env`.
 
@@ -87,18 +87,18 @@ accounts under an `@shishi.seed` domain, with random passwords and no real inbox
 ## Notable decisions
 
 **One person can be more than one role.** Sponsors, hosts, and attendees aren't separate
-account types — they're flags on a `profile`, because the same person often hosts one week
+account types; they're flags on a `profile`, because the same person often hosts one week
 and attends the next. Modeling them as three user tables would have made the common case
 the hard case.
 
 **Row Level Security on all 20 tables.** Every table enables RLS with policies scoping
-access to the requesting user — 52 policies total. A dinner guest list, a private message
+access to the requesting user, 52 policies total. A dinner guest list, a private message
 thread, and a sponsor's donation history are all things the database itself refuses to
 hand to the wrong account, independent of client code.
 
 **Stripe is server-only, and the webhook is the source of truth.** The client asks an Edge
 Function for a payment intent; it never holds a secret key. A donation is marked paid when
-`payment_intent.succeeded` arrives at the webhook — not when the client says the payment
+`payment_intent.succeeded` arrives at the webhook, not when the client says the payment
 worked, which is a claim an attacker controls.
 
 **Seeded dinners expire on their own.** Sample data flips `published → past` once its date
@@ -111,8 +111,8 @@ dinner. Trust and safety isn't a v2 feature for that.
 
 ## Status
 
-MVP. The full attendee and host journeys — onboarding, publishing, discovery, RSVP,
-potluck, messaging — work end to end against Supabase, and the sponsor flow runs against
+MVP. The full attendee and host journeys (onboarding, publishing, discovery, RSVP,
+potluck, messaging) work end to end against Supabase, and the sponsor flow runs against
 Stripe test mode. It has not been operated with real dinners or real money.
 
 ## Project structure
@@ -123,7 +123,7 @@ Stripe test mode. It has not been operated with real dinners or real money.
 | `mobile/components/`, `mobile/lib/` | Shared UI and Supabase client |
 | `supabase/schema.sql`, `supabase/migrations/` | Schema, RLS policies, seed data |
 | `supabase/functions/` | Deno Edge Functions for Stripe |
-| `docs/PRODUCT_BIBLE.md` | Full product spec — features, journeys, open questions |
+| `docs/PRODUCT_BIBLE.md` | Full product spec: features, journeys, open questions |
 
 [`docs/PRODUCT_BIBLE.md`](docs/PRODUCT_BIBLE.md) is the source of truth for product
 decisions and is enforced as always-on context for AI agents working in this repo.
